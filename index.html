@@ -16290,6 +16290,7 @@ let _suEmailVal = '';
 let _suPassVal  = '';
 let _suPhoneVal = '';
 let _unameTimer = null;
+let _inEmailSignupFlow = false; // prevents onAuthStateChanged from interfering mid-signup
 
 // Pages that require login
 const PROTECTED_PAGES = ['page-chart','page-firms','page-agent','page-news'];
@@ -16306,12 +16307,23 @@ function _hasProfanity(str){
 _fbAuth.onAuthStateChanged(async function(user){
   _authUser = user;
   if(user){
-    // Load profile from Firestore
+    if(_inEmailSignupFlow) return; // email signup handles its own flow
     try{
       const doc = await _fbDb.collection('users').doc(user.uid).get();
-      if(doc.exists) _authProfile = doc.data();
-    }catch(e){ _authProfile = null; }
-    _onLoggedIn();
+      if(doc.exists && doc.data().username){
+        // Profile complete — log them in
+        _authProfile = doc.data();
+        _onLoggedIn();
+      } else {
+        // Authenticated but no username yet — show username screen
+        document.getElementById('auth-wall').style.display = 'flex';
+        document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
+        document.getElementById('auth-step-gusername').classList.add('active');
+      }
+    }catch(e){
+      // Firestore error fallback — still let them in
+      _onLoggedIn();
+    }
   } else {
     _onLoggedOut();
   }
@@ -16420,6 +16432,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
 // ── STEP 1: Email + Password ──
 async function authStep1(){
+  _inEmailSignupFlow = true; // lock out onAuthStateChanged during signup
   const email = document.getElementById('su-email').value.trim();
   const pass  = document.getElementById('su-pass').value;
   const eErr  = document.getElementById('su-email-err');
@@ -16534,13 +16547,16 @@ async function authStep3(){
       uid:           cred.user.uid
     });
     _authProfile = { username, email: _suEmailVal, phone: _suPhoneVal };
-    // Show success screen
+    _inEmailSignupFlow = false;
+    _onLoggedIn();
+    // Show success screen then go to charts
     authGoStep('success');
     setTimeout(function(){
       authHideWall();
-      goPage('page-chart');
+      _origGoPage('page-chart');
     }, 2000);
   }catch(e){
+    _inEmailSignupFlow = false;
     btn.disabled = false; btn.textContent = 'CREATE ACCOUNT →';
     err.textContent = e.code === 'auth/email-already-in-use'
       ? 'An account with this email already exists.'
