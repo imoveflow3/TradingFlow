@@ -16406,8 +16406,8 @@ let _suPhoneVal = '';
 let _unameTimer = null;
 let _inEmailSignupFlow = false; // prevents onAuthStateChanged from interfering mid-signup
 
-// Pages that require login
-const PROTECTED_PAGES = ['page-chart','page-firms','page-agent','page-news'];
+// Pages that require login (everything except home)
+const PROTECTED_PAGES = ['page-chart','page-firms','page-agent','page-news','page-community','page-strategy','page-leaderboard'];
 
 // Profanity list (common inappropriate words)
 const _BANNED_WORDS = ['sex','sexy','porn','xxx','nude','naked','fuck','shit','ass','cock','dick','pussy','cunt','bitch','whore','slut','rape','nigger','nigga','kike','spic','chink','faggot','fag','retard','cum','tits','boob','penis','vagina','anal','dildo','orgy','fetish'];
@@ -16466,11 +16466,9 @@ function _onLoggedIn(){
 }
 
 function _onLoggedOut(){
-  // Lock protected nav buttons visually
+  // Dim all nav buttons except home
   document.querySelectorAll('.nav-btn').forEach(b => {
-    const id = b.id;
-    const page = 'page-' + id.replace('nav-','');
-    if(PROTECTED_PAGES.includes(page)) b.style.opacity = '0.35';
+    if(b.id !== 'nav-home') b.style.opacity = '0.35';
   });
   // Show hero sign up button
   const btn = document.getElementById('hero-main-btn');
@@ -16484,10 +16482,10 @@ function _onLoggedOut(){
   if(slot) slot.style.display = 'none';
 }
 
-// ── Override goPage to enforce auth ──
+// ── Override goPage to enforce auth (only home is public) ──
 const _origGoPage = goPage;
 function goPage(id){
-  if(PROTECTED_PAGES.includes(id) && !_authUser){
+  if(id !== 'page-home' && !_authUser){
     authShowWall('login');
     return;
   }
