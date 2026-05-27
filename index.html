@@ -4337,6 +4337,24 @@ body.light .auth-google-btn:hover{background:#fff;border-color:rgba(0,0,0,0.2)}
         <button class="auth-btn" id="su-btn-3" onclick="authStep3()">CREATE ACCOUNT →</button>
       </div>
 
+      <!-- ── GOOGLE USERNAME SETUP ── -->
+      <div class="auth-step" id="auth-step-gusername">
+        <div class="auth-logo">
+          <div class="auth-logo-mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          <div class="auth-title">ONE LAST STEP</div>
+          <div class="auth-sub">Choose your TradingFlow username</div>
+        </div>
+        <div class="auth-field">
+          <label>USERNAME</label>
+          <div class="auth-field-wrap">
+            <input class="auth-input" id="g-username" type="text" placeholder="e.g. TraderZamir99" autocomplete="off" oninput="authCheckGUsername(this.value)"/>
+            <span class="auth-username-check" id="g-uname-check"></span>
+          </div>
+          <div class="auth-err" id="g-uname-err"></div>
+        </div>
+        <button class="auth-btn" id="g-uname-btn" onclick="authSaveGUsername()">LET'S GO →</button>
+      </div>
+
       <!-- ── SIGN UP SUCCESS ── -->
       <div class="auth-step" id="auth-step-success">
         <div style="text-align:center;padding:20px 0">
@@ -16593,32 +16611,104 @@ async function authGoogleSignIn(){
   try{
     const result = await _fbAuth.signInWithPopup(provider);
     const user = result.user;
-    // Check if user already has a profile
+    // Check if user already has a profile with a username
     const doc = await _fbDb.collection('users').doc(user.uid).get();
-    if(!doc.exists){
-      // New Google user — auto-create profile with Google display name
-      const rawName = (user.displayName || user.email.split('@')[0]).replace(/\s+/g,'');
-      let username = rawName.replace(/[^a-zA-Z0-9_]/g,'').slice(0,20) || 'user' + Date.now().toString().slice(-5);
-      // Ensure username is unique
-      const snap = await _fbDb.collection('users').where('usernameLower','==',username.toLowerCase()).get();
-      if(!snap.empty) username = username + Math.floor(Math.random()*999);
-      await _fbDb.collection('users').doc(user.uid).set({
-        email:         user.email,
-        username:      username,
-        usernameLower: username.toLowerCase(),
-        phone:         '',
-        createdAt:     firebase.firestore.FieldValue.serverTimestamp(),
-        uid:           user.uid,
-        provider:      'google'
-      });
-      _authProfile = { username, email: user.email };
+    if(doc.exists && doc.data().username){
+      // Returning user — go straight in
+      _authProfile = doc.data();
+      authHideWall();
+      showToast('Welcome back, ' + _authProfile.username + '!', 'b');
+    } else {
+      // New Google user — show username setup screen
+      _authUser = user;
+      authShowWall('signup');
+      document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
+      document.getElementById('auth-step-gusername').classList.add('active');
     }
-    authHideWall();
-    showToast('Welcome to TradingFlow!', 'b');
   }catch(e){
     if(e.code !== 'auth/popup-closed-by-user'){
       showToast('Google sign-in failed. Try again.', 'r');
     }
+  }
+}
+
+// ── Google username availability check ──
+let _gUnameTimer = null;
+async function authCheckGUsername(val){
+  const check = document.getElementById('g-uname-check');
+  const err   = document.getElementById('g-uname-err');
+  err.classList.remove('show');
+  if(!val || val.length < 3){ check.textContent = ''; return; }
+  if(_hasProfanity(val)){
+    check.textContent = '❌';
+    err.textContent = 'Username contains inappropriate words.';
+    err.classList.add('show'); return;
+  }
+  if(!/^[a-zA-Z0-9_]+$/.test(val)){
+    check.textContent = '❌';
+    err.textContent = 'Only letters, numbers, and underscores allowed.';
+    err.classList.add('show'); return;
+  }
+  check.textContent = '⏳';
+  clearTimeout(_gUnameTimer);
+  _gUnameTimer = setTimeout(async function(){
+    try{
+      const snap = await _fbDb.collection('users').where('usernameLower','==',val.toLowerCase()).get();
+      if(snap.empty){ check.textContent = '✅'; err.classList.remove('show'); }
+      else { check.textContent = '❌'; err.textContent = 'Username already taken.'; err.classList.add('show'); }
+    }catch(e){ check.textContent = ''; }
+  }, 600);
+}
+
+// ── Save Google username ──
+async function authSaveGUsername(){
+  const username = document.getElementById('g-username').value.trim();
+  const err = document.getElementById('g-uname-err');
+  const btn = document.getElementById('g-uname-btn');
+  err.classList.remove('show');
+  if(username.length < 3){
+    err.textContent = 'Username must be at least 3 characters.';
+    err.classList.add('show'); return;
+  }
+  if(_hasProfanity(username)){
+    err.textContent = 'Username contains inappropriate words.';
+    err.classList.add('show'); return;
+  }
+  if(!/^[a-zA-Z0-9_]+$/.test(username)){
+    err.textContent = 'Only letters, numbers, and underscores allowed.';
+    err.classList.add('show'); return;
+  }
+  btn.disabled = true; btn.textContent = 'SAVING...';
+  try{
+    // Final uniqueness check
+    const snap = await _fbDb.collection('users').where('usernameLower','==',username.toLowerCase()).get();
+    if(!snap.empty){
+      err.textContent = 'Username already taken — choose another.';
+      err.classList.add('show');
+      btn.disabled = false; btn.textContent = "LET'S GO →"; return;
+    }
+    // Save profile to Firestore
+    await _fbDb.collection('users').doc(_authUser.uid).set({
+      email:         _authUser.email,
+      username:      username,
+      usernameLower: username.toLowerCase(),
+      phone:         '',
+      createdAt:     firebase.firestore.FieldValue.serverTimestamp(),
+      uid:           _authUser.uid,
+      provider:      'google'
+    });
+    _authProfile = { username, email: _authUser.email };
+    // Show success then go to charts
+    document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
+    document.getElementById('auth-step-success').classList.add('active');
+    setTimeout(function(){
+      authHideWall();
+      _origGoPage('page-chart');
+    }, 2000);
+  }catch(e){
+    btn.disabled = false; btn.textContent = "LET'S GO →";
+    err.textContent = 'Something went wrong. Try again.';
+    err.classList.add('show');
   }
 }
 </script>
