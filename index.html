@@ -4276,6 +4276,33 @@ body.light .auth-divider span{background:#f0f4fb}
 .auth-google-btn:hover{background:rgba(255,255,255,0.09);border-color:rgba(255,255,255,0.18)}
 body.light .auth-google-btn{background:rgba(255,255,255,0.9);border-color:rgba(0,0,0,0.12);color:#1f2937}
 body.light .auth-google-btn:hover{background:#fff;border-color:rgba(0,0,0,0.2)}
+
+/* ── PROFILE MODAL ── */
+#profile-modal{position:fixed;inset:0;z-index:9700;background:rgba(4,9,20,0.88);backdrop-filter:blur(16px);display:none;align-items:center;justify-content:center;padding:20px}
+#profile-modal.open{display:flex}
+#profile-box{background:var(--bg1);border:1px solid rgba(59,130,246,0.15);border-radius:20px;width:100%;max-width:460px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,0.6)}
+.profile-header{padding:24px 24px 0;display:flex;align-items:center;justify-content:space-between}
+.profile-title{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:var(--text);letter-spacing:.08em}
+.profile-close{background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:6px;transition:color 200ms}
+.profile-close:hover{color:var(--text)}
+.profile-avatar-section{display:flex;flex-direction:column;align-items:center;padding:20px 24px 16px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.profile-avatar-big{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--neon),var(--neon2));display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#000;font-family:'Orbitron',monospace;margin-bottom:10px;box-shadow:0 0 24px rgba(59,130,246,0.3)}
+.profile-username-display{font-family:'Orbitron',monospace;font-size:16px;font-weight:700;color:var(--text);letter-spacing:.05em}
+.profile-email-display{font-size:11px;color:var(--muted);margin-top:3px;font-family:'Fira Code',monospace}
+.profile-body{padding:16px 24px 24px;display:flex;flex-direction:column;gap:4px;max-height:420px;overflow-y:auto}
+.profile-section-label{font-size:9px;font-family:'Orbitron',monospace;letter-spacing:.1em;color:var(--muted);margin-top:12px;margin-bottom:6px}
+.profile-field-row{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px 14px}
+.profile-field-label{font-size:9px;font-family:'Orbitron',monospace;color:var(--muted);letter-spacing:.08em;margin-bottom:2px}
+.profile-field-value{font-size:12px;color:var(--text);font-family:'Fira Code',monospace}
+.profile-edit-btn{background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);border-radius:6px;color:var(--neon);font-size:9px;font-family:'Orbitron',monospace;letter-spacing:.06em;padding:4px 10px;cursor:pointer;transition:background 200ms;flex-shrink:0}
+.profile-edit-btn:hover{background:rgba(59,130,246,0.2)}
+.profile-edit-input{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--neon);border-radius:8px;color:var(--text);font-size:12px;padding:8px 12px;outline:none;font-family:'Fira Code',monospace;margin-top:6px;-webkit-user-select:text!important;user-select:text!important}
+.profile-save-btn{width:100%;padding:11px;background:linear-gradient(135deg,var(--neon),var(--neon2));border:none;border-radius:10px;color:#000;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:.1em;cursor:pointer;margin-top:16px;transition:opacity 200ms}
+.profile-save-btn:hover{opacity:.88}
+.profile-danger-btn{width:100%;padding:10px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:10px;color:var(--red);font-family:'Orbitron',monospace;font-size:9px;letter-spacing:.08em;cursor:pointer;margin-top:8px;transition:background 200ms}
+.profile-danger-btn:hover{background:rgba(239,68,68,0.12)}
+body.light #profile-box{background:#f0f4fb}
+body.light .profile-field-row{background:rgba(0,0,0,0.03);border-color:rgba(0,0,0,0.07)}
 </style>
 </head>
 <body>
@@ -4383,6 +4410,93 @@ body.light .auth-google-btn:hover{background:#fff;border-color:rgba(0,0,0,0.2)}
           Continue with Google
         </button>
       </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PROFILE SETTINGS MODAL ═══ -->
+<div id="profile-modal" onclick="if(event.target===this)closeProfileModal()">
+  <div id="profile-box">
+
+    <!-- Header -->
+    <div class="profile-header">
+      <div class="profile-title">PROFILE SETTINGS</div>
+      <button class="profile-close" onclick="closeProfileModal()" title="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- Avatar + Name -->
+    <div class="profile-avatar-section">
+      <div class="profile-avatar-big" id="profile-avatar-letter">?</div>
+      <div class="profile-username-display" id="profile-username-display">—</div>
+      <div class="profile-email-display" id="profile-email-display">—</div>
+    </div>
+
+    <!-- Editable Fields -->
+    <div class="profile-body">
+
+      <!-- ACCOUNT INFO -->
+      <div class="profile-section-label">ACCOUNT INFO</div>
+
+      <!-- Username -->
+      <div class="profile-field-row" id="pf-username-row">
+        <div>
+          <div class="profile-field-label">USERNAME</div>
+          <div class="profile-field-value" id="pf-username-val">—</div>
+          <input class="profile-edit-input" id="pf-username-input" style="display:none" placeholder="New username" maxlength="24" oninput="pfCheckUsername(this.value)"/>
+          <div id="pf-username-err" style="font-size:10px;color:var(--red);margin-top:4px;display:none"></div>
+        </div>
+        <button class="profile-edit-btn" id="pf-username-btn" onclick="pfToggleEdit('username')">EDIT</button>
+      </div>
+
+      <!-- Phone -->
+      <div class="profile-field-row" id="pf-phone-row">
+        <div>
+          <div class="profile-field-label">PHONE NUMBER</div>
+          <div class="profile-field-value" id="pf-phone-val">—</div>
+          <input class="profile-edit-input" id="pf-phone-input" style="display:none" placeholder="+1 555 000 0000" type="tel" maxlength="20"/>
+          <div id="pf-phone-err" style="font-size:10px;color:var(--red);margin-top:4px;display:none"></div>
+        </div>
+        <button class="profile-edit-btn" id="pf-phone-btn" onclick="pfToggleEdit('phone')">EDIT</button>
+      </div>
+
+      <!-- Save Account Changes -->
+      <div id="pf-save-wrap" style="display:none">
+        <button class="profile-save-btn" onclick="pfSaveChanges()">SAVE CHANGES</button>
+      </div>
+
+      <!-- SECURITY -->
+      <div class="profile-section-label">SECURITY</div>
+
+      <!-- Email (display only) -->
+      <div class="profile-field-row">
+        <div>
+          <div class="profile-field-label">EMAIL</div>
+          <div class="profile-field-value" id="pf-email-val">—</div>
+        </div>
+      </div>
+
+      <!-- Password change -->
+      <div class="profile-field-row" id="pf-pw-row">
+        <div style="flex:1">
+          <div class="profile-field-label">PASSWORD</div>
+          <div class="profile-field-value" id="pf-pw-val">••••••••</div>
+          <div id="pf-pw-fields" style="display:none;flex-direction:column;gap:6px;margin-top:6px">
+            <input class="profile-edit-input" id="pf-pw-current" type="password" placeholder="Current password" style="margin-top:0"/>
+            <input class="profile-edit-input" id="pf-pw-new" type="password" placeholder="New password (min 6 chars)" style="margin-top:0"/>
+            <input class="profile-edit-input" id="pf-pw-confirm" type="password" placeholder="Confirm new password" style="margin-top:0"/>
+            <div id="pf-pw-err" style="font-size:10px;color:var(--red);display:none"></div>
+            <button class="profile-save-btn" onclick="pfChangePassword()" style="margin-top:4px">UPDATE PASSWORD</button>
+          </div>
+        </div>
+        <button class="profile-edit-btn" id="pf-pw-btn" onclick="pfTogglePwEdit()" style="align-self:flex-start">CHANGE</button>
+      </div>
+
+      <!-- DANGER ZONE -->
+      <div class="profile-section-label" style="margin-top:20px;color:var(--red)">DANGER ZONE</div>
+      <button class="profile-danger-btn" onclick="pfDeleteAccount()">DELETE ACCOUNT</button>
 
     </div>
   </div>
@@ -16605,6 +16719,10 @@ function authShowUserMenu(){
       <div style="font-size:9px;font-family:'Orbitron',monospace;color:var(--muted);letter-spacing:.08em">SIGNED IN AS</div>
       <div style="font-size:11px;color:var(--text);margin-top:2px;font-family:'Fira Code',monospace">${escHtml(_authProfile?.username || _authUser?.email || '')}</div>
     </div>
+    <button onclick="menu.remove();openProfileModal()" style="width:100%;padding:8px 12px;background:none;border:none;color:var(--text);font-size:10px;font-family:'Orbitron',monospace;letter-spacing:.08em;cursor:pointer;text-align:left;border-radius:8px;display:flex;align-items:center;gap:8px">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      PROFILE SETTINGS
+    </button>
     <button onclick="authSignOut()" style="width:100%;padding:8px 12px;background:none;border:none;color:var(--red);font-size:10px;font-family:'Orbitron',monospace;letter-spacing:.08em;cursor:pointer;text-align:left;border-radius:8px;display:flex;align-items:center;gap:8px">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       SIGN OUT
@@ -16696,6 +16814,275 @@ async function authCheckGUsername(val){
 }
 
 // ── Save Google username ──
+// ════════════════════════════════════════════
+// PROFILE SETTINGS MODAL
+// ════════════════════════════════════════════
+
+let _pfEditingUsername = false;
+let _pfEditingPhone    = false;
+let _pfUnameTimer      = null;
+
+function openProfileModal(){
+  if(!_authUser) return;
+  const modal = document.getElementById('profile-modal');
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  pfPopulateFields();
+}
+
+function closeProfileModal(){
+  const modal = document.getElementById('profile-modal');
+  modal.classList.remove('open');
+  document.body.style.overflow = '';
+  // Reset any open edit states
+  pfResetEdits();
+}
+
+function pfPopulateFields(){
+  const u    = _authUser;
+  const p    = _authProfile || {};
+  const name = p.username || u?.displayName || '?';
+  const email= u?.email || '—';
+  const phone= p.phone || '—';
+
+  // Avatar letter
+  document.getElementById('profile-avatar-letter').textContent = name.charAt(0).toUpperCase();
+
+  // Header display
+  document.getElementById('profile-username-display').textContent = name;
+  document.getElementById('profile-email-display').textContent    = email;
+
+  // Fields
+  document.getElementById('pf-username-val').textContent = name;
+  document.getElementById('pf-phone-val').textContent    = phone !== '' ? phone : 'Not set';
+  document.getElementById('pf-email-val').textContent    = email;
+
+  // Hide password fields
+  document.getElementById('pf-pw-fields').style.display = 'none';
+  document.getElementById('pf-pw-btn').textContent = 'CHANGE';
+}
+
+function pfResetEdits(){
+  _pfEditingUsername = false;
+  _pfEditingPhone    = false;
+
+  // Username
+  document.getElementById('pf-username-input').style.display = 'none';
+  document.getElementById('pf-username-err').style.display   = 'none';
+  document.getElementById('pf-username-btn').textContent     = 'EDIT';
+
+  // Phone
+  document.getElementById('pf-phone-input').style.display = 'none';
+  document.getElementById('pf-phone-err').style.display   = 'none';
+  document.getElementById('pf-phone-btn').textContent     = 'EDIT';
+
+  // Save button
+  document.getElementById('pf-save-wrap').style.display = 'none';
+
+  // Password
+  document.getElementById('pf-pw-fields').style.display = 'none';
+  document.getElementById('pf-pw-btn').textContent = 'CHANGE';
+  document.getElementById('pf-pw-err').style.display = 'none';
+  ['pf-pw-current','pf-pw-new','pf-pw-confirm'].forEach(id => { document.getElementById(id).value = ''; });
+}
+
+function pfToggleEdit(field){
+  if(field === 'username'){
+    _pfEditingUsername = !_pfEditingUsername;
+    const inp = document.getElementById('pf-username-input');
+    const btn = document.getElementById('pf-username-btn');
+    if(_pfEditingUsername){
+      inp.style.display = 'block';
+      inp.value = _authProfile?.username || '';
+      inp.focus();
+      btn.textContent = 'CANCEL';
+    } else {
+      inp.style.display = 'none';
+      document.getElementById('pf-username-err').style.display = 'none';
+      btn.textContent = 'EDIT';
+    }
+  } else if(field === 'phone'){
+    _pfEditingPhone = !_pfEditingPhone;
+    const inp = document.getElementById('pf-phone-input');
+    const btn = document.getElementById('pf-phone-btn');
+    if(_pfEditingPhone){
+      inp.style.display = 'block';
+      inp.value = _authProfile?.phone || '';
+      inp.focus();
+      btn.textContent = 'CANCEL';
+    } else {
+      inp.style.display = 'none';
+      document.getElementById('pf-phone-err').style.display = 'none';
+      btn.textContent = 'EDIT';
+    }
+  }
+  // Show save button if any edit is open
+  document.getElementById('pf-save-wrap').style.display = (_pfEditingUsername || _pfEditingPhone) ? 'block' : 'none';
+}
+
+function pfTogglePwEdit(){
+  const fields = document.getElementById('pf-pw-fields');
+  const btn    = document.getElementById('pf-pw-btn');
+  const showing = fields.style.display === 'flex';
+  if(showing){
+    fields.style.display = 'none';
+    btn.textContent = 'CHANGE';
+    document.getElementById('pf-pw-err').style.display = 'none';
+    ['pf-pw-current','pf-pw-new','pf-pw-confirm'].forEach(id => { document.getElementById(id).value = ''; });
+  } else {
+    fields.style.display = 'flex';
+    btn.textContent = 'CANCEL';
+    document.getElementById('pf-pw-current').focus();
+  }
+}
+
+let _pfUnameValid = true;
+async function pfCheckUsername(val){
+  const err = document.getElementById('pf-username-err');
+  _pfUnameValid = false;
+  err.style.display = 'none';
+  if(!val || val.length < 3){ return; }
+  if(_hasProfanity(val)){
+    err.textContent = 'Username contains inappropriate words.';
+    err.style.display = 'block'; return;
+  }
+  if(!/^[a-zA-Z0-9_]+$/.test(val)){
+    err.textContent = 'Only letters, numbers, and underscores allowed.';
+    err.style.display = 'block'; return;
+  }
+  // If same as current, skip uniqueness check
+  if(val.toLowerCase() === (_authProfile?.usernameLower || '')){
+    _pfUnameValid = true; return;
+  }
+  clearTimeout(_pfUnameTimer);
+  _pfUnameTimer = setTimeout(async function(){
+    try{
+      const snap = await _fbDb.collection('users').where('usernameLower','==',val.toLowerCase()).get();
+      if(snap.empty){ _pfUnameValid = true; err.style.display = 'none'; }
+      else { err.textContent = 'Username already taken.'; err.style.display = 'block'; }
+    }catch(e){ _pfUnameValid = true; }
+  }, 500);
+}
+
+async function pfSaveChanges(){
+  const updates = {};
+  const btn = document.querySelector('#pf-save-wrap .profile-save-btn');
+  btn.textContent = 'SAVING...'; btn.disabled = true;
+
+  // Username
+  if(_pfEditingUsername){
+    const val = document.getElementById('pf-username-input').value.trim();
+    const err = document.getElementById('pf-username-err');
+    if(val.length < 3){
+      err.textContent = 'Username must be at least 3 characters.';
+      err.style.display = 'block';
+      btn.textContent = 'SAVE CHANGES'; btn.disabled = false; return;
+    }
+    if(_hasProfanity(val)){
+      err.textContent = 'Username contains inappropriate words.';
+      err.style.display = 'block';
+      btn.textContent = 'SAVE CHANGES'; btn.disabled = false; return;
+    }
+    if(!/^[a-zA-Z0-9_]+$/.test(val)){
+      err.textContent = 'Only letters, numbers, and underscores allowed.';
+      err.style.display = 'block';
+      btn.textContent = 'SAVE CHANGES'; btn.disabled = false; return;
+    }
+    // Check uniqueness (only if changed)
+    if(val.toLowerCase() !== (_authProfile?.usernameLower || '')){
+      try{
+        const snap = await _fbDb.collection('users').where('usernameLower','==',val.toLowerCase()).get();
+        if(!snap.empty){
+          err.textContent = 'Username already taken — choose another.';
+          err.style.display = 'block';
+          btn.textContent = 'SAVE CHANGES'; btn.disabled = false; return;
+        }
+      }catch(e){}
+    }
+    updates.username      = val;
+    updates.usernameLower = val.toLowerCase();
+  }
+
+  // Phone
+  if(_pfEditingPhone){
+    const val = document.getElementById('pf-phone-input').value.trim();
+    updates.phone = val;
+  }
+
+  if(Object.keys(updates).length === 0){
+    showToast('No changes to save.', 'b');
+    btn.textContent = 'SAVE CHANGES'; btn.disabled = false; return;
+  }
+
+  try{
+    await _fbDb.collection('users').doc(_authUser.uid).update(updates);
+    // Update local profile cache
+    _authProfile = Object.assign({}, _authProfile, updates);
+    // Refresh display
+    pfPopulateFields();
+    pfResetEdits();
+    showToast('Profile updated!', 'g');
+  }catch(e){
+    showToast('Save failed: ' + (e.message || 'Unknown error'), 'r');
+  }
+  btn.textContent = 'SAVE CHANGES'; btn.disabled = false;
+}
+
+async function pfChangePassword(){
+  const current = document.getElementById('pf-pw-current').value;
+  const nw      = document.getElementById('pf-pw-new').value;
+  const conf    = document.getElementById('pf-pw-confirm').value;
+  const err     = document.getElementById('pf-pw-err');
+  const btn     = document.querySelector('#pf-pw-fields .profile-save-btn');
+  err.style.display = 'none';
+
+  if(!current){ err.textContent = 'Enter your current password.'; err.style.display = 'block'; return; }
+  if(nw.length < 6){ err.textContent = 'New password must be at least 6 characters.'; err.style.display = 'block'; return; }
+  if(nw !== conf){ err.textContent = 'Passwords do not match.'; err.style.display = 'block'; return; }
+
+  btn.textContent = 'UPDATING...'; btn.disabled = true;
+
+  try{
+    // Re-authenticate then update
+    const credential = firebase.auth.EmailAuthProvider.credential(_authUser.email, current);
+    await _authUser.reauthenticateWithCredential(credential);
+    await _authUser.updatePassword(nw);
+    pfTogglePwEdit();
+    showToast('Password updated successfully!', 'g');
+  }catch(e){
+    if(e.code === 'auth/wrong-password'){
+      err.textContent = 'Current password is incorrect.';
+    } else {
+      err.textContent = 'Error: ' + (e.message || e.code);
+    }
+    err.style.display = 'block';
+  }
+  btn.textContent = 'UPDATE PASSWORD'; btn.disabled = false;
+}
+
+async function pfDeleteAccount(){
+  const confirmed = confirm('⚠️ Are you sure you want to permanently delete your account? This cannot be undone.');
+  if(!confirmed) return;
+  const confirmed2 = confirm('Last chance — ALL your data will be deleted forever. Delete now?');
+  if(!confirmed2) return;
+  try{
+    // Delete Firestore doc
+    await _fbDb.collection('users').doc(_authUser.uid).delete();
+    // Delete Firebase auth account
+    await _authUser.delete();
+    closeProfileModal();
+    showToast('Account deleted.', 'b');
+  }catch(e){
+    if(e.code === 'auth/requires-recent-login'){
+      showToast('Please sign out and sign back in, then try again.', 'r');
+    } else {
+      showToast('Delete failed: ' + (e.message || e.code), 'r');
+    }
+  }
+}
+
+// ════════════════════════════════════════════
+
 async function authSaveGUsername(){
   const username = document.getElementById('g-username').value.trim();
   const err = document.getElementById('g-uname-err');
