@@ -16719,7 +16719,7 @@ function authShowUserMenu(){
       <div style="font-size:9px;font-family:'Orbitron',monospace;color:var(--muted);letter-spacing:.08em">SIGNED IN AS</div>
       <div style="font-size:11px;color:var(--text);margin-top:2px;font-family:'Fira Code',monospace">${escHtml(_authProfile?.username || _authUser?.email || '')}</div>
     </div>
-    <button onclick="menu.remove();openProfileModal()" style="width:100%;padding:8px 12px;background:none;border:none;color:var(--text);font-size:10px;font-family:'Orbitron',monospace;letter-spacing:.08em;cursor:pointer;text-align:left;border-radius:8px;display:flex;align-items:center;gap:8px">
+    <button onclick="document.getElementById('auth-user-menu').remove();openProfileModal()" style="width:100%;padding:8px 12px;background:none;border:none;color:var(--text);font-size:10px;font-family:'Orbitron',monospace;letter-spacing:.08em;cursor:pointer;text-align:left;border-radius:8px;display:flex;align-items:center;gap:8px">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
       PROFILE SETTINGS
     </button>
