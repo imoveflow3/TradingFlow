@@ -16608,16 +16608,26 @@ async function authSignOut(){
 // ── Google Sign-In ──
 async function authGoogleSignIn(){
   const provider = new firebase.auth.GoogleAuthProvider();
+  // Store that we're doing a Google redirect so we know on return
+  sessionStorage.setItem('_tfGoogleRedirect','1');
   try{
-    const result = await _fbAuth.signInWithPopup(provider);
+    await _fbAuth.signInWithRedirect(provider);
+  }catch(e){
+    sessionStorage.removeItem('_tfGoogleRedirect');
+    showToast('Google sign-in failed. Try again.', 'r');
+  }
+}
+
+async function _handleGoogleRedirectResult(){
+  try{
+    const result = await _fbAuth.getRedirectResult();
+    if(!result || !result.user) return;
+    sessionStorage.removeItem('_tfGoogleRedirect');
     const user = result.user;
-    // Check if user already has a profile with a username
     const doc = await _fbDb.collection('users').doc(user.uid).get();
     if(doc.exists && doc.data().username){
-      // Returning user — go straight in
+      // Returning user — already handled by onAuthStateChanged
       _authProfile = doc.data();
-      authHideWall();
-      showToast('Welcome back, ' + _authProfile.username + '!', 'b');
     } else {
       // New Google user — show username setup screen
       _authUser = user;
@@ -16626,11 +16636,14 @@ async function authGoogleSignIn(){
       document.getElementById('auth-step-gusername').classList.add('active');
     }
   }catch(e){
+    sessionStorage.removeItem('_tfGoogleRedirect');
     if(e.code !== 'auth/popup-closed-by-user'){
-      showToast('Google sign-in failed. Try again.', 'r');
+      showToast('Google sign-in failed: ' + (e.message || e.code), 'r');
     }
   }
 }
+// Check for redirect result on every page load
+_handleGoogleRedirectResult();
 
 // ── Google username availability check ──
 let _gUnameTimer = null;
