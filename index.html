@@ -4303,6 +4303,31 @@ body.light .auth-google-btn:hover{background:#fff;border-color:rgba(0,0,0,0.2)}
 .profile-danger-btn:hover{background:rgba(239,68,68,0.12)}
 body.light #profile-box{background:#f0f4fb}
 body.light .profile-field-row{background:rgba(0,0,0,0.03);border-color:rgba(0,0,0,0.07)}
+/* ── ADMIN PAGE ── */
+#page-admin{padding:28px 20px 40px;max-width:900px;margin:0 auto}
+.admin-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px}
+.admin-title{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;color:var(--text);letter-spacing:.08em}
+.admin-title span{color:var(--neon)}
+.admin-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:28px}
+.admin-stat-card{background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.15);border-radius:14px;padding:16px 18px}
+.admin-stat-label{font-size:9px;font-family:'Orbitron',monospace;color:var(--muted);letter-spacing:.1em;margin-bottom:6px}
+.admin-stat-val{font-size:26px;font-weight:900;font-family:'Orbitron',monospace;color:var(--neon)}
+.admin-table-wrap{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:16px;overflow:hidden}
+.admin-table-head{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.07)}
+.admin-table-title{font-family:'Orbitron',monospace;font-size:11px;color:var(--text);letter-spacing:.07em}
+.admin-search{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:var(--text);font-size:11px;padding:6px 12px;outline:none;width:200px;font-family:'Fira Code',monospace;-webkit-user-select:text!important;user-select:text!important}
+.admin-search::placeholder{color:var(--muted)}
+.admin-table{width:100%;border-collapse:collapse}
+.admin-table th{font-size:9px;font-family:'Orbitron',monospace;color:var(--muted);letter-spacing:.1em;padding:10px 20px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.06);white-space:nowrap}
+.admin-table td{font-size:11px;padding:12px 20px;border-bottom:1px solid rgba(255,255,255,0.04);color:var(--text);font-family:'Fira Code',monospace;vertical-align:middle}
+.admin-table tr:last-child td{border-bottom:none}
+.admin-table tr:hover td{background:rgba(255,255,255,0.02)}
+.admin-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:9px;font-family:'Orbitron',monospace;letter-spacing:.06em}
+.admin-badge.google{background:rgba(66,133,244,0.15);color:#4285f4;border:1px solid rgba(66,133,244,0.3)}
+.admin-badge.email{background:rgba(59,130,246,0.1);color:var(--neon);border:1px solid rgba(59,130,246,0.2)}
+.admin-refresh-btn{background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);border-radius:8px;color:var(--neon);font-size:9px;font-family:'Orbitron',monospace;letter-spacing:.06em;padding:6px 14px;cursor:pointer;transition:background 200ms}
+.admin-refresh-btn:hover{background:rgba(59,130,246,0.2)}
+.admin-empty{text-align:center;padding:40px;color:var(--muted);font-size:12px;font-family:'Fira Code',monospace}
 </style>
 </head>
 <body>
@@ -7099,6 +7124,64 @@ import time; time.sleep(60)  # run for 60 seconds</pre></div>
           </div>
         </div>
 
+      </div>
+    </div>
+
+    <!-- ═══ ADMIN (OWNER ONLY) ═══ -->
+    <div class="page" id="page-admin">
+      <div id="page-admin">
+        <div class="admin-header">
+          <div>
+            <div class="admin-title">TRADINGFLOW <span>ADMIN</span></div>
+            <div style="font-size:10px;color:var(--muted);font-family:'Fira Code',monospace;margin-top:4px">Owner dashboard — private</div>
+          </div>
+          <button class="admin-refresh-btn" onclick="adminLoad()">↺ REFRESH</button>
+        </div>
+
+        <!-- Stats -->
+        <div class="admin-stats">
+          <div class="admin-stat-card">
+            <div class="admin-stat-label">TOTAL USERS</div>
+            <div class="admin-stat-val" id="admin-stat-total">—</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-label">EMAIL SIGNUPS</div>
+            <div class="admin-stat-val" id="admin-stat-email">—</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-label">GOOGLE SIGNUPS</div>
+            <div class="admin-stat-val" id="admin-stat-google">—</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-label">NEWEST TODAY</div>
+            <div class="admin-stat-val" id="admin-stat-today">—</div>
+          </div>
+        </div>
+
+        <!-- User table -->
+        <div class="admin-table-wrap">
+          <div class="admin-table-head">
+            <div class="admin-table-title">ALL USERS</div>
+            <input class="admin-search" id="admin-search" placeholder="Search username or email…" oninput="adminFilter(this.value)"/>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>USERNAME</th>
+                  <th>EMAIL</th>
+                  <th>PHONE</th>
+                  <th>PROVIDER</th>
+                  <th>JOINED</th>
+                </tr>
+              </thead>
+              <tbody id="admin-tbody">
+                <tr><td colspan="6" class="admin-empty">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -15740,7 +15823,7 @@ updateConnectBtn();
 ═══════════════════════════════════════ */
 (function(){
   const TF_ORDER   = ['1M','5M','15M','1H','4H','1D'];
-  const PAGE_ORDER = ['page-home','page-chart','page-firms','page-agent','page-news'];
+  const PAGE_ORDER = ['page-home','page-chart','page-firms','page-agent','page-news','page-admin'];
 
   function isTyping(){
     const t = document.activeElement && document.activeElement.tagName;
@@ -16482,9 +16565,19 @@ function _onLoggedOut(){
   if(slot) slot.style.display = 'none';
 }
 
+// ── Admin owner ──
+const _ADMIN_EMAIL = 'zamirbracey3@gmail.com';
+function _isOwner(){ return _authUser && _authUser.email === _ADMIN_EMAIL; }
+
 // ── Override goPage to enforce auth (only home is public) ──
 const _origGoPage = goPage;
 function goPage(id){
+  if(id === 'page-admin'){
+    if(!_isOwner()){ goPage('page-home'); return; }
+    _origGoPage(id);
+    adminLoad();
+    return;
+  }
   if(id !== 'page-home' && !_authUser){
     authShowWall('login');
     return;
@@ -16717,6 +16810,7 @@ function authShowUserMenu(){
       <div style="font-size:9px;font-family:'Orbitron',monospace;color:var(--muted);letter-spacing:.08em">SIGNED IN AS</div>
       <div style="font-size:11px;color:var(--text);margin-top:2px;font-family:'Fira Code',monospace">${escHtml(_authProfile?.username || _authUser?.email || '')}</div>
     </div>
+    ${_adminMenuBtn()}
     <button onclick="document.getElementById('auth-user-menu').remove();openProfileModal()" style="width:100%;padding:8px 12px;background:none;border:none;color:var(--text);font-size:10px;font-family:'Orbitron',monospace;letter-spacing:.08em;cursor:pointer;text-align:left;border-radius:8px;display:flex;align-items:center;gap:8px">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
       PROFILE SETTINGS
@@ -16812,6 +16906,92 @@ async function authCheckGUsername(val){
 }
 
 // ── Save Google username ──
+// ════════════════════════════════════════════
+// ADMIN DASHBOARD
+// ════════════════════════════════════════════
+
+let _adminUsers = [];
+
+async function adminLoad(){
+  if(!_isOwner()) return;
+  const tbody = document.getElementById('admin-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" class="admin-empty">Loading…</td></tr>';
+  try{
+    const snap = await _fbDb.collection('users').orderBy('createdAt','desc').get();
+    _adminUsers = [];
+    snap.forEach(doc => _adminUsers.push(doc.data()));
+    adminRender(_adminUsers);
+    adminStats(_adminUsers);
+  }catch(e){
+    tbody.innerHTML = '<tr><td colspan="6" class="admin-empty">Error loading users.</td></tr>';
+  }
+}
+
+function adminStats(users){
+  const today = new Date(); today.setHours(0,0,0,0);
+  let emailCount=0, googleCount=0, todayCount=0;
+  users.forEach(u => {
+    if(u.provider === 'google') googleCount++; else emailCount++;
+    if(u.createdAt && u.createdAt.toDate && u.createdAt.toDate() >= today) todayCount++;
+  });
+  document.getElementById('admin-stat-total').textContent  = users.length;
+  document.getElementById('admin-stat-email').textContent  = emailCount;
+  document.getElementById('admin-stat-google').textContent = googleCount;
+  document.getElementById('admin-stat-today').textContent  = todayCount;
+}
+
+function adminRender(users){
+  const tbody = document.getElementById('admin-tbody');
+  if(!users.length){
+    tbody.innerHTML = '<tr><td colspan="6" class="admin-empty">No users yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = users.map((u,i) => {
+    const joined = u.createdAt && u.createdAt.toDate
+      ? u.createdAt.toDate().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+      : '—';
+    const prov = u.provider === 'google'
+      ? '<span class="admin-badge google">GOOGLE</span>'
+      : '<span class="admin-badge email">EMAIL</span>';
+    return `<tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td style="color:var(--neon);font-weight:600">${escHtml(u.username||'—')}</td>
+      <td>${escHtml(u.email||'—')}</td>
+      <td>${escHtml(u.phone||'—')}</td>
+      <td>${prov}</td>
+      <td style="color:var(--muted)">${joined}</td>
+    </tr>`;
+  }).join('');
+}
+
+function adminFilter(q){
+  if(!q){ adminRender(_adminUsers); return; }
+  const lq = q.toLowerCase();
+  adminRender(_adminUsers.filter(u =>
+    (u.username||'').toLowerCase().includes(lq) ||
+    (u.email||'').toLowerCase().includes(lq)
+  ));
+}
+
+// Secret shortcut: Ctrl+Shift+A (or Cmd+Shift+A on Mac)
+document.addEventListener('keydown', function(e){
+  if((e.ctrlKey||e.metaKey) && e.shiftKey && e.key === 'A'){
+    e.preventDefault();
+    if(_isOwner()){ goPage('page-admin'); }
+    else if(_authUser){ showToast('Access denied.','r'); }
+    else { authShowWall('login'); }
+  }
+});
+
+// Also show admin link in profile menu for owner
+function _adminMenuBtn(){
+  if(!_isOwner()) return '';
+  return `<button onclick="document.getElementById('auth-user-menu').remove();goPage('page-admin')" style="width:100%;padding:8px 12px;background:none;border:none;color:#f59e0b;font-size:10px;font-family:'Orbitron',monospace;letter-spacing:.08em;cursor:pointer;text-align:left;border-radius:8px;display:flex;align-items:center;gap:8px">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    ADMIN PANEL
+  </button>`;
+}
+
 // ════════════════════════════════════════════
 // PROFILE SETTINGS MODAL
 // ════════════════════════════════════════════
