@@ -6,7 +6,7 @@
 <meta http-equiv="X-Frame-Options" content="DENY"/>
 <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet"/>
-<meta http-equiv="Content-Security-Policy" content="frame-src 'none'; object-src 'none'; base-uri 'self';"/>
+<meta http-equiv="Content-Security-Policy" content="frame-src https://tradingflow-ad756.firebaseapp.com https://accounts.google.com; object-src 'none'; base-uri 'self';"/>
 <title>TradingFlow // AI PRO</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;600;700;900&family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet"/>
@@ -16624,41 +16624,47 @@ async function authSignOut(){
 // ── Google Sign-In ──
 async function authGoogleSignIn(){
   const provider = new firebase.auth.GoogleAuthProvider();
-  // Store that we're doing a Google redirect so we know on return
-  sessionStorage.setItem('_tfGoogleRedirect','1');
+  provider.addScope('email');
+  provider.addScope('profile');
   try{
-    await _fbAuth.signInWithRedirect(provider);
+    // Try popup first — works on most modern browsers
+    const result = await _fbAuth.signInWithPopup(provider);
+    await _handleGoogleUser(result.user);
   }catch(e){
-    sessionStorage.removeItem('_tfGoogleRedirect');
-    showToast('Google sign-in failed. Try again.', 'r');
+    if(e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user'){
+      // Fallback to redirect if popup blocked
+      try{ await _fbAuth.signInWithRedirect(provider); }catch(e2){}
+    } else {
+      showToast('Google error: ' + (e.code || e.message), 'r');
+    }
+  }
+}
+
+async function _handleGoogleUser(user){
+  if(!user) return;
+  const doc = await _fbDb.collection('users').doc(user.uid).get();
+  if(doc.exists && doc.data().username){
+    _authProfile = doc.data();
+    // onAuthStateChanged will call _onLoggedIn
+  } else {
+    // New user — show username screen
+    _authUser = user;
+    document.getElementById('auth-wall').style.display = 'flex';
+    document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
+    document.getElementById('auth-step-gusername').classList.add('active');
   }
 }
 
 async function _handleGoogleRedirectResult(){
   try{
     const result = await _fbAuth.getRedirectResult();
-    if(!result || !result.user) return;
-    sessionStorage.removeItem('_tfGoogleRedirect');
-    const user = result.user;
-    const doc = await _fbDb.collection('users').doc(user.uid).get();
-    if(doc.exists && doc.data().username){
-      // Returning user — already handled by onAuthStateChanged
-      _authProfile = doc.data();
-    } else {
-      // New Google user — show username setup screen
-      _authUser = user;
-      authShowWall('signup');
-      document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
-      document.getElementById('auth-step-gusername').classList.add('active');
-    }
+    if(result && result.user) await _handleGoogleUser(result.user);
   }catch(e){
-    sessionStorage.removeItem('_tfGoogleRedirect');
-    if(e.code !== 'auth/popup-closed-by-user'){
-      showToast('Google sign-in failed: ' + (e.message || e.code), 'r');
+    if(e.code && e.code !== 'auth/popup-closed-by-user'){
+      showToast('Google sign-in failed: ' + (e.code), 'r');
     }
   }
 }
-// Check for redirect result on every page load
 _handleGoogleRedirectResult();
 
 // ── Google username availability check ──
