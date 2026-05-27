@@ -4303,6 +4303,79 @@ body.light .auth-google-btn:hover{background:#fff;border-color:rgba(0,0,0,0.2)}
 .profile-danger-btn:hover{background:rgba(239,68,68,0.12)}
 body.light #profile-box{background:#f0f4fb}
 body.light .profile-field-row{background:rgba(0,0,0,0.03);border-color:rgba(0,0,0,0.07)}
+
+/* ── MOBILE ADVISORY BANNER ── */
+#mobile-advisory{
+  display:none;position:fixed;bottom:0;left:0;right:0;z-index:99000;
+  background:linear-gradient(135deg,rgba(10,20,45,0.98),rgba(6,13,28,0.98));
+  border-top:1px solid rgba(59,130,246,0.25);
+  backdrop-filter:blur(20px);padding:16px 20px 24px;
+  box-shadow:0 -8px 40px rgba(0,0,0,0.6);
+  flex-direction:column;align-items:center;gap:10px;text-align:center;
+}
+#mobile-advisory.show{display:flex}
+.mob-adv-icon{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,rgba(59,130,246,0.2),rgba(6,182,212,0.15));border:1px solid rgba(59,130,246,0.3);display:flex;align-items:center;justify-content:center;margin-bottom:2px}
+.mob-adv-title{font-family:'Orbitron',monospace;font-size:12px;font-weight:800;color:#e2ecff;letter-spacing:.07em}
+.mob-adv-text{font-size:11px;color:rgba(180,200,240,0.7);line-height:1.6;max-width:300px}
+.mob-adv-dismiss{margin-top:4px;padding:10px 28px;background:linear-gradient(135deg,var(--neon),var(--neon2));border:none;border-radius:10px;color:#000;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:.08em;cursor:pointer}
+
+/* ── MOBILE RESPONSIVE ── */
+@media(max-width:768px){
+  /* Bottom nav instead of side nav */
+  #side-nav{
+    width:100%!important;height:56px;flex-direction:row;
+    position:fixed;bottom:0;left:0;right:0;top:auto;z-index:200;
+    border-right:none;border-top:1px solid rgba(255,255,255,0.07);
+    box-shadow:0 -4px 24px rgba(0,0,0,0.5);overflow:visible;
+  }
+  #side-nav:hover{width:100%!important;box-shadow:0 -4px 24px rgba(0,0,0,0.5)}
+  .snav-brand{display:none}
+  .snav-links{flex-direction:row;padding:0;gap:0;justify-content:space-around;align-items:center;height:100%;flex:1}
+  .nav-btn{flex-direction:column;gap:3px;padding:6px 10px;min-width:0;flex:1;justify-content:center;align-items:center;border-radius:0}
+  .nav-btn span{opacity:1!important;transform:none!important;font-size:8px;letter-spacing:.04em}
+  .nav-btn svg{width:20px;height:20px}
+  .nav-btn::before{display:none}
+  .snav-bottom{display:none}
+
+  /* Main area padding for bottom nav */
+  #main-area{padding-bottom:56px}
+  #app{flex-direction:column}
+
+  /* Topbar */
+  #topbar{padding:0 12px;height:48px}
+  #topbar-affirmation{display:none}
+  .discord-topbar-btn span{display:none}
+
+  /* Home page */
+  #bento-grid{grid-template-columns:1fr!important;padding:0 10px 10px}
+  .bento-card.span2{grid-column:span 1!important}
+  #stat-numbers{grid-template-columns:1fr 1fr;padding:0 10px}
+  .hero-cta{flex-direction:column;gap:8px}
+  .cta-btn-main,.cta-btn-sub{width:100%}
+
+  /* Pages */
+  .page{overflow-y:auto;overflow-x:hidden}
+
+  /* Grids */
+  .grid-2,.grid-3{grid-template-columns:1fr!important}
+  .mop-grid{grid-template-columns:1fr!important}
+  .agent-live-stats{grid-template-columns:1fr 1fr!important}
+  .agent-sessions{grid-template-columns:repeat(3,1fr)!important}
+  .bsg-platform-grid{grid-template-columns:repeat(3,1fr)!important}
+  .pnl-grid{grid-template-columns:1fr!important;padding:0 12px 10px}
+  .comm-grid{grid-template-columns:1fr!important;padding:0 12px 80px}
+
+  /* Auth wall */
+  #auth-box{max-width:100%;border-radius:16px}
+
+  /* Modals */
+  #profile-box{border-radius:16px;max-width:100%}
+  #admin-modal>div{border-radius:16px;max-width:100%}
+
+  /* Charts — stack them */
+  .chart-grid-2x2{grid-template-columns:1fr!important;grid-template-rows:auto!important}
+}
+
 /* ── ADMIN PAGE ── */
 #page-admin{padding:28px 20px 40px;max-width:900px;margin:0 auto}
 .admin-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px}
@@ -4331,6 +4404,17 @@ body.light .profile-field-row{background:rgba(0,0,0,0.03);border-color:rgba(0,0,
 </style>
 </head>
 <body>
+
+<!-- ═══ MOBILE ADVISORY BANNER ═══ -->
+<div id="mobile-advisory">
+  <div class="mob-adv-icon">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+  </div>
+  <div class="mob-adv-title">BEST ON DESKTOP</div>
+  <div class="mob-adv-text">TradingFlow is designed for desktop and tablet. For the full experience — live charts, AI signals, and real-time data — open this on a computer or tablet.</div>
+  <button class="mob-adv-dismiss" onclick="document.getElementById('mobile-advisory').classList.remove('show');localStorage.setItem('mob-adv-dismissed','1')">GOT IT, CONTINUE ANYWAY</button>
+</div>
+
 <!-- Arcade Background -->
 <canvas id="bg-canvas"></canvas>
 <div class="scanlines"></div>
@@ -17310,6 +17394,13 @@ async function authSaveGUsername(){
     err.classList.add('show');
   }
 }
+
+// ── Mobile advisory banner ──
+(function(){
+  if(window.innerWidth <= 768 && !localStorage.getItem('mob-adv-dismissed')){
+    document.getElementById('mobile-advisory').classList.add('show');
+  }
+})();
 </script>
 </body>
 </html>
