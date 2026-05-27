@@ -4527,6 +4527,57 @@ body.light .profile-field-row{background:rgba(0,0,0,0.03);border-color:rgba(0,0,
   </div>
 </div>
 
+<!-- ═══ ADMIN MODAL (OWNER ONLY) ═══ -->
+<div id="admin-modal" style="display:none;position:fixed;inset:0;z-index:9750;background:rgba(4,9,20,0.92);backdrop-filter:blur(16px);align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto">
+  <div style="background:var(--bg1);border:1px solid rgba(251,191,36,0.2);border-radius:20px;width:100%;max-width:860px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,0.7);margin:auto">
+
+    <!-- Header -->
+    <div style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-family:'Orbitron',monospace;font-size:14px;font-weight:900;color:var(--text);letter-spacing:.08em">TRADINGFLOW <span style="color:#f59e0b">ADMIN</span></div>
+        <div style="font-size:10px;color:var(--muted);font-family:'Fira Code',monospace;margin-top:3px">Owner dashboard — private</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="admin-refresh-btn" onclick="adminLoad()">↺ REFRESH</button>
+        <button onclick="closeAdminModal()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:6px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div style="padding:20px 24px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px">
+      <div class="admin-stat-card"><div class="admin-stat-label">TOTAL USERS</div><div class="admin-stat-val" id="admin-stat-total">—</div></div>
+      <div class="admin-stat-card"><div class="admin-stat-label">EMAIL SIGNUPS</div><div class="admin-stat-val" id="admin-stat-email">—</div></div>
+      <div class="admin-stat-card"><div class="admin-stat-label">GOOGLE SIGNUPS</div><div class="admin-stat-val" id="admin-stat-google">—</div></div>
+      <div class="admin-stat-card"><div class="admin-stat-label">NEW TODAY</div><div class="admin-stat-val" id="admin-stat-today">—</div></div>
+    </div>
+
+    <!-- Table -->
+    <div style="padding:20px 24px 28px">
+      <div class="admin-table-wrap">
+        <div class="admin-table-head">
+          <div class="admin-table-title">ALL USERS</div>
+          <input class="admin-search" id="admin-search" placeholder="Search username or email…" oninput="adminFilter(this.value)"/>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>#</th><th>USERNAME</th><th>EMAIL</th><th>PHONE</th><th>PROVIDER</th><th>JOINED</th>
+              </tr>
+            </thead>
+            <tbody id="admin-tbody">
+              <tr><td colspan="6" class="admin-empty">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- ═══ DEVTOOLS PROTECTION OVERLAY ═══ -->
 <div id="dt-warn" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(4,9,20,0.97);align-items:center;justify-content:center;flex-direction:column;gap:16px;font-family:'Orbitron',monospace;text-align:center;padding:32px">
   <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#ff0055" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -7125,62 +7176,6 @@ import time; time.sleep(60)  # run for 60 seconds</pre></div>
         </div>
 
       </div>
-    </div>
-
-    <!-- ═══ ADMIN (OWNER ONLY) ═══ -->
-    <div class="page" id="page-admin" style="padding:28px 20px 40px">
-        <div class="admin-header">
-          <div>
-            <div class="admin-title">TRADINGFLOW <span>ADMIN</span></div>
-            <div style="font-size:10px;color:var(--muted);font-family:'Fira Code',monospace;margin-top:4px">Owner dashboard — private</div>
-          </div>
-          <button class="admin-refresh-btn" onclick="adminLoad()">↺ REFRESH</button>
-        </div>
-
-        <!-- Stats -->
-        <div class="admin-stats">
-          <div class="admin-stat-card">
-            <div class="admin-stat-label">TOTAL USERS</div>
-            <div class="admin-stat-val" id="admin-stat-total">—</div>
-          </div>
-          <div class="admin-stat-card">
-            <div class="admin-stat-label">EMAIL SIGNUPS</div>
-            <div class="admin-stat-val" id="admin-stat-email">—</div>
-          </div>
-          <div class="admin-stat-card">
-            <div class="admin-stat-label">GOOGLE SIGNUPS</div>
-            <div class="admin-stat-val" id="admin-stat-google">—</div>
-          </div>
-          <div class="admin-stat-card">
-            <div class="admin-stat-label">NEWEST TODAY</div>
-            <div class="admin-stat-val" id="admin-stat-today">—</div>
-          </div>
-        </div>
-
-        <!-- User table -->
-        <div class="admin-table-wrap">
-          <div class="admin-table-head">
-            <div class="admin-table-title">ALL USERS</div>
-            <input class="admin-search" id="admin-search" placeholder="Search username or email…" oninput="adminFilter(this.value)"/>
-          </div>
-          <div style="overflow-x:auto">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>USERNAME</th>
-                  <th>EMAIL</th>
-                  <th>PHONE</th>
-                  <th>PROVIDER</th>
-                  <th>JOINED</th>
-                </tr>
-              </thead>
-              <tbody id="admin-tbody">
-                <tr><td colspan="6" class="admin-empty">Loading…</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
     </div>
 
   </div><!-- /pages -->
@@ -15821,7 +15816,7 @@ updateConnectBtn();
 ═══════════════════════════════════════ */
 (function(){
   const TF_ORDER   = ['1M','5M','15M','1H','4H','1D'];
-  const PAGE_ORDER = ['page-home','page-chart','page-firms','page-agent','page-news','page-admin'];
+  const PAGE_ORDER = ['page-home','page-chart','page-firms','page-agent','page-news'];
 
   function isTyping(){
     const t = document.activeElement && document.activeElement.tagName;
@@ -16570,12 +16565,6 @@ function _isOwner(){ return _authUser && _authUser.email === _ADMIN_EMAIL; }
 // ── Override goPage to enforce auth (only home is public) ──
 const _origGoPage = goPage;
 function goPage(id){
-  if(id === 'page-admin'){
-    if(!_isOwner()){ goPage('page-home'); return; }
-    _origGoPage(id);
-    adminLoad();
-    return;
-  }
   if(id !== 'page-home' && !_authUser){
     authShowWall('login');
     return;
@@ -16910,6 +16899,18 @@ async function authCheckGUsername(val){
 
 let _adminUsers = [];
 
+function openAdminModal(){
+  if(!_isOwner()){ showToast('Access denied.','r'); return; }
+  document.getElementById('admin-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  adminLoad();
+}
+
+function closeAdminModal(){
+  document.getElementById('admin-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
 async function adminLoad(){
   if(!_isOwner()) return;
   const tbody = document.getElementById('admin-tbody');
@@ -16975,7 +16976,7 @@ function adminFilter(q){
 document.addEventListener('keydown', function(e){
   if((e.ctrlKey||e.metaKey) && e.shiftKey && e.key === 'A'){
     e.preventDefault();
-    if(_isOwner()){ goPage('page-admin'); }
+    if(_isOwner()){ openAdminModal(); }
     else if(_authUser){ showToast('Access denied.','r'); }
     else { authShowWall('login'); }
   }
@@ -16984,7 +16985,7 @@ document.addEventListener('keydown', function(e){
 // Also show admin link in profile menu for owner
 function _adminMenuBtn(){
   if(!_isOwner()) return '';
-  return `<button onclick="document.getElementById('auth-user-menu').remove();goPage('page-admin')" style="width:100%;padding:8px 12px;background:none;border:none;color:#f59e0b;font-size:10px;font-family:'Orbitron',monospace;letter-spacing:.08em;cursor:pointer;text-align:left;border-radius:8px;display:flex;align-items:center;gap:8px">
+  return `<button onclick="document.getElementById('auth-user-menu').remove();openAdminModal()" style="width:100%;padding:8px 12px;background:none;border:none;color:#f59e0b;font-size:10px;font-family:'Orbitron',monospace;letter-spacing:.08em;cursor:pointer;text-align:left;border-radius:8px;display:flex;align-items:center;gap:8px">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
     ADMIN PANEL
   </button>`;
