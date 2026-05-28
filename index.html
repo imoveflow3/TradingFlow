@@ -13927,16 +13927,11 @@ function onTesterStratChange(){
 function toggleLiveStrategy(){
   const focused = _stFocusedChart||0;
   const existingSession = _stMultiSessions.find(s=>s.idx===focused&&s.running);
-
   if(existingSession){
-    // Stop just the focused chart's session
+    // Stop ONLY the focused chart — all other charts keep running
     stStopSingleSession(focused);
-  } else if(focused===0 && !_stMultiSessions.some(s=>s.idx===0)){
-    // Chart 1 with no active multi-session — use original single-chart tester
-    stSaveCurrentConfig();
-    startLiveStrategy();
   } else {
-    // Start the focused chart
+    // Start the focused chart — does NOT affect any other running chart
     stSaveCurrentConfig();
     stStartSingleSession(focused);
   }
@@ -14389,20 +14384,14 @@ async function stStartSingleSession(idx){
 
   _stMultiSessions.push(session);
 
-  // Show multi-grid
-  const mg=document.getElementById('st-multi-grid');
-  if(mg) mg.style.display='grid';
-
-  // Mark global running flag so STOP button works
+  // Mark at least one session running globally
   lsRunning=true;
   document.getElementById('testerBtn').classList.add('live');
-  const startBtn=document.getElementById('st-start-btn');
-  startBtn.textContent='■ STOP LIVE SESSION';
-  startBtn.classList.add('running');
 
   stRefreshChartBtnStates();
   stRenderMultiGrid();
-  showToast('▶ Testing started on '+target.label+' ('+target.pair+')','b');
+  const stratName=_ST_STRAT_SHORT[cfg.strategy]||cfg.strategy||'';
+  showToast('▶ '+target.label+' · '+target.pair+' · '+stratName+' started','b');
 }
 
 /* Stop a single chart session by index */
@@ -14414,20 +14403,15 @@ function stStopSingleSession(idx){
   if(session._simTicker){clearInterval(session._simTicker);session._simTicker=null;}
   if(session.ws){try{session.ws.close();}catch(e){} session.ws=null;}
   _stMultiSessions=_stMultiSessions.filter(s=>s.idx!==idx);
-  showToast('■ Testing stopped on '+session.label,'b');
+  showToast('■ Stopped '+session.label+' ('+session.pair+'  '+(_ST_STRAT_SHORT[session.config?.strategy]||'')+')', 'b');
 
-  // If no sessions left, reset everything
-  if(!_stMultiSessions.some(s=>s.running)&&!lsTimer){
+  // Only reset global UI if no sessions at all are left
+  const anyLeft = _stMultiSessions.some(s=>s.running);
+  if(!anyLeft){
     lsRunning=false;
     document.getElementById('testerBtn').classList.remove('live');
-    const startBtn=document.getElementById('st-start-btn');
-    startBtn.textContent='▶ START LIVE SESSION';
-    startBtn.classList.remove('running');
-    const mg=document.getElementById('st-multi-grid');
-    if(mg) mg.style.display='none';
-    const sb=document.getElementById('st-status-box');
-    if(sb){ sb.className='st-status-box'; sb.textContent='Ready — configure your strategy above and tap START.'; }
   }
+  // Never touch other sessions — just refresh display
   stRefreshChartBtnStates();
   stRenderMultiGrid();
 }
