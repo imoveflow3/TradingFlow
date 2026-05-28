@@ -6236,27 +6236,15 @@ body.light .profile-field-row{background:rgba(0,0,0,0.03);border-color:rgba(0,0,
           <div id="ai-step-cards"></div>
         </div>
 
-        <!-- ── SETUP JOURNAL ── -->
-        <div id="setup-journal">
-          <div class="sj-header" onclick="toggleSetupJournal()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            <span class="sj-title">SETUP JOURNAL</span>
-            <span class="sj-count" id="sj-count">0 MARKS</span>
-            <span class="sj-toggle" id="sj-toggle">▼</span>
+        <!-- ── LIVE STRATEGY FEED ── -->
+        <div id="sj-feed-section" style="background:rgba(0,0,0,0.3);border-top:1px solid rgba(0,255,204,0.1);border-bottom:1px solid rgba(0,255,204,0.06);display:none">
+          <div class="sj-feed-head">
+            <div class="sj-feed-dot"></div>
+            LIVE STRATEGY FEED
+            <span style="font-family:'Fira Code',monospace;font-size:7px;color:var(--muted);font-weight:400;margin-left:auto" id="sj-feed-count">0 events</span>
+            <button onclick="stClearFeed()" style="background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:3px;color:var(--muted);font-size:7px;font-family:'Orbitron',monospace;cursor:pointer;padding:1px 5px;letter-spacing:.05em">CLEAR</button>
           </div>
-          <div class="sj-body" id="sj-body">
-            <div class="sj-empty" id="sj-empty">No setups marked yet — hit ◈ MARK SETUP on the chart to log a trade idea</div>
-          </div>
-          <!-- Live Strategy Feed — shown when any session is running -->
-          <div id="sj-feed-section">
-            <div class="sj-feed-head">
-              <div class="sj-feed-dot"></div>
-              LIVE STRATEGY FEED
-              <span style="font-family:'Fira Code',monospace;font-size:7px;color:var(--muted);font-weight:400;margin-left:auto" id="sj-feed-count">0 events</span>
-              <button onclick="stClearFeed()" style="background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:3px;color:var(--muted);font-size:7px;font-family:'Orbitron',monospace;cursor:pointer;padding:1px 5px;letter-spacing:.05em">CLEAR</button>
-            </div>
-            <div class="sj-feed-list" id="sj-feed-list"></div>
-          </div>
+          <div class="sj-feed-list" id="sj-feed-list"></div>
         </div>
 
         <!-- AI Trade Narration Log -->
@@ -14537,14 +14525,6 @@ function stLogFeed(session, msgText, type){
 
   // Cap at 60 entries
   while(list.children.length > 60) list.removeChild(list.lastChild);
-
-  // Auto-expand journal if collapsed
-  const body = document.getElementById('sj-body');
-  const toggle = document.getElementById('sj-toggle');
-  if(body && body.style.display === 'none'){
-    body.style.display = '';
-    if(toggle) toggle.style.transform = '';
-  }
 }
 
 function stClearFeed(){
