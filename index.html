@@ -28,6 +28,7 @@ const _fbAuth = firebase.auth();
 const _fbDb   = firebase.firestore();
 </script>
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<script src="https://s3.tradingview.com/tv.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -6074,15 +6075,14 @@ body.light .profile-field-row{background:rgba(0,0,0,0.03);border-color:rgba(0,0,
       </div>
 
         <div id="multi-chart-grid">
-        <!-- Main Chart — LightweightCharts (real-time, strategy-connected) -->
+        <!-- Main Chart — TradingView real-time widget -->
         <div id="markup-chart-wrap" class="chart-cell">
-          <div id="markup-chart" style="position:absolute;inset:0;width:100%;height:100%;z-index:1"></div>
-          <canvas id="markup-canvas" style="position:absolute;inset:0;pointer-events:none;z-index:2"></canvas>
-          <canvas id="draw-canvas" style="position:absolute;inset:0;pointer-events:none;z-index:3"></canvas>
-          <!-- Markup legend overlay -->
-          <div id="markup-legend" style="position:absolute;top:6px;left:8px;z-index:5;display:flex;flex-direction:column;gap:3px"></div>
-          <!-- OHLC Info Bar -->
-          <div id="ohlc-info-bar" style="position:absolute;top:6px;left:50%;transform:translateX(-50%);z-index:10;display:none;align-items:center;gap:10px;background:rgba(3,0,18,0.92);border:1px solid rgba(0,255,204,0.15);border-radius:5px;padding:3px 12px;font-family:'Fira Code',monospace;font-size:10px;white-space:nowrap;pointer-events:none;backdrop-filter:blur(4px)"></div>
+          <div id="tv-widget-container" style="position:absolute;inset:0;width:100%;height:100%;z-index:1"></div>
+          <div id="markup-chart" style="display:none"></div>
+          <canvas id="markup-canvas" style="position:absolute;inset:0;pointer-events:none;z-index:2;display:none"></canvas>
+          <canvas id="draw-canvas" style="position:absolute;inset:0;pointer-events:none;z-index:3;display:none"></canvas>
+          <div id="markup-legend" style="display:none"></div>
+          <div id="ohlc-info-bar" style="display:none"></div>
           <!-- Strategy Live Overlay (scanning status, bottom-left) -->
           <div id="st-chart-overlay">
             <div class="st-co-strategy" id="st-co-strategy">ORB STRATEGY</div>
@@ -9924,6 +9924,59 @@ function buildPnLChart(){
    CHART ENGINE + LIVE DATA + AI MARKUP
 ═══════════════════════════════════════ */
 let tvWidget = null, currentTF = '5M', currentPair = 'BTCUSD';
+
+/* ══════════════════════════════════════════
+   TRADINGVIEW WIDGET — real-time live chart
+══════════════════════════════════════════ */
+const TV_SYMBOLS = {
+  EURUSD:'FX:EURUSD',    GBPUSD:'FX:GBPUSD',    USDJPY:'FX:USDJPY',
+  USDCHF:'FX:USDCHF',    AUDUSD:'FX:AUDUSD',    USDCAD:'FX:USDCAD',
+  NZDUSD:'FX:NZDUSD',    GBPJPY:'FX:GBPJPY',    EURJPY:'FX:EURJPY',
+  EURGBP:'FX:EURGBP',    XAUUSD:'TVC:GOLD',      XAGUSD:'TVC:SILVER',
+  NAS100:'CAPITALCOM:US100', SPX500:'CAPITALCOM:US500', DJI30:'CAPITALCOM:US30',
+  BTCUSD:'BINANCE:BTCUSDT', ETHUSD:'BINANCE:ETHUSDT', SOLUSD:'BINANCE:SOLUSDT',
+  AAPL:'NASDAQ:AAPL', MSFT:'NASDAQ:MSFT', NVDA:'NASDAQ:NVDA',
+  TSLA:'NASDAQ:TSLA', AMZN:'NASDAQ:AMZN', GOOGL:'NASDAQ:GOOGL', META:'NASDAQ:META',
+};
+const TV_TF = { '1M':'1','5M':'5','15M':'15','1H':'60','4H':'240','1D':'D' };
+
+function loadTVWidget(pair, tf){
+  const container = document.getElementById('tv-widget-container');
+  if(!container) return;
+  container.innerHTML = '';
+  const sym = TV_SYMBOLS[pair] || ('FX:'+pair);
+  const interval = TV_TF[tf] || '5';
+  // Detect light/dark mode
+  const theme = document.body.classList.contains('light') ? 'light' : 'dark';
+  try{
+    tvWidget = new TradingView.widget({
+      autosize: true,
+      symbol: sym,
+      interval: interval,
+      timezone: 'Etc/UTC',
+      theme: theme,
+      style: '1',
+      locale: 'en',
+      toolbar_bg: theme==='dark' ? '#040914' : '#f0f4fb',
+      enable_publishing: false,
+      hide_top_toolbar: false,
+      hide_legend: false,
+      withdateranges: true,
+      allow_symbol_change: true,
+      details: false,
+      hotlist: false,
+      calendar: false,
+      container_id: 'tv-widget-container',
+    });
+    // Update price display from TV widget (best-effort)
+    setLiveSource('TRADINGVIEW LIVE');
+    setLiveBadge('live');
+    hideChartLoader();
+  }catch(e){
+    // TradingView script not loaded yet — retry once
+    setTimeout(()=>loadTVWidget(pair, tf), 800);
+  }
+}
 let aiMarkups = { bos:[], zones:[], choch:[], returnStatus:null, entryReady:false, entry:null, sl:null, tp:null, obs:[], fvgs:[], liquidity:[] };
 let priceLines = [];
 let liveCandles = [];
@@ -10999,22 +11052,23 @@ function pushTick(price){ queueTick(price); }
 
 async function loadChart(){
   stopLive();
-  // Reset indicator series on pair/TF change
-  volumeSeries=null; emaSeries={}; vwapSeries=null; bbSeries={};
-  if(rsiChart){try{rsiChart.remove();}catch(e){} rsiChart=null; rsiSeries=null;}
   clearTimeout(_reconnectTimer);
   document.getElementById('api-key-prompt').style.display='none';
-  // Initialise AI chat panel
   try{ initAIChat(); }catch(_){}
   const pair=currentPair, tf=currentTF;
 
-  // Initialize chart empty — only real exchange data will populate it
+  // ── Load TradingView real-time chart ──
+  showChartLoader('Loading TradingView live chart…');
+  loadTVWidget(pair, tf);
+
+  // Keep price polling running for demo account bar / AI signals
   liveCandles = [];
   _liveTickPrice = 0;
-  _lastRealTickMs = 0; // no real tick yet — chart stays blank until data arrives
-  initChart([]);
-  showChartLoader(BINANCE_SYM[pair] ? 'Connecting to Binance…' : 'Fetching live market data…');
-  startChartLoop(pair, tf); // heartbeat re-renders on real ticks only
+  _lastRealTickMs = 0;
+
+  // Stub out initChart so old code doesn't crash
+  try{ initChart([]); }catch(_){}
+  startChartLoop(pair, tf);
 
   if(BINANCE_SYM[pair]){
     /* ── CRYPTO: Binance REST history + live WS ── */
@@ -13713,8 +13767,8 @@ function setTF(btn,tf){
   btn.classList.add('active');
   currentTF=tf;
   _lastDisplayPrice=null;
-  resetMarkups();
-  loadChart();
+  try{ resetMarkups(); }catch(_){}
+  loadTVWidget(currentPair, tf);
   saveAppState();
 }
 function updateChartPair(){
@@ -13724,10 +13778,10 @@ function updateChartPair(){
   document.getElementById('api-key-prompt').style.display='none';
   _lastDisplayPrice=null;
   document.getElementById('chartChange').textContent='';
-  resetMarkups();
-  lsUpdateContractHint();
-  loadChart();
-  if(document.getElementById('demo-acct-bar')?.style.display!=='none') lsUpdateDemoBar();
+  try{ resetMarkups(); }catch(_){}
+  try{ lsUpdateContractHint(); }catch(_){}
+  loadTVWidget(currentPair, currentTF);
+  if(document.getElementById('demo-acct-bar')?.style.display!=='none') try{ lsUpdateDemoBar(); }catch(_){}
   saveAppState();
 }
 function switchPlatform(){ /* only one view */ }
