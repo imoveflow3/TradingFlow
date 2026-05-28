@@ -13178,25 +13178,27 @@ async function updateWatchlistPrices(){
 /* ── Update an extra chart cell to show a new pair ── */
 function updateExtraChart(cellIdx, newPair){
   const ec = _extraCharts[cellIdx];
-  if(!ec) return;
+  if(!ec || !ec.container) return;
   ec.pair = newPair;
-  const price = BASE_PRICES[newPair]||1;
-  const placeholder = generateSimHistory(newPair,'1H',120,price);
-  ec.series.setData(placeholder);
-  ec.chart.timeScale().scrollToRealTime();
-  // Load real data
-  const isCrypto = !!window.BINANCE_SYM?.[newPair];
-  const loadReal = isCrypto
-    ? window.fetchBinanceHistory?.(newPair,'1H')
-    : window.fetchYahooHistory?.(newPair,'1H');
-  if(loadReal){
-    loadReal.then(rc=>{
-      if(rc?.length && ec.pair===newPair){
-        try{ ec.series.setData(rc); }catch(e){}
-        if(ec.priceEl) ec.priceEl.textContent = rc[rc.length-1].close.toFixed(rc[rc.length-1].close>100?2:rc[rc.length-1].close>10?3:5);
-      }
-    }).catch(()=>{});
-  }
+  ec.container.innerHTML = '';
+  const sym = TV_SYMBOLS[newPair] || ('FX:'+newPair);
+  try{
+    new TradingView.widget({
+      autosize: true,
+      symbol: sym,
+      interval: TV_TF[currentTF]||'5',
+      timezone: 'Etc/UTC',
+      theme: document.body.classList.contains('light')?'light':'dark',
+      style: '1',
+      locale: 'en',
+      enable_publishing: false,
+      hide_top_toolbar: true,
+      hide_legend: false,
+      withdateranges: false,
+      allow_symbol_change: false,
+      container_id: ec.container.id,
+    });
+  }catch(e){}
 }
 
 function setChartLayout(n){
@@ -13212,10 +13214,8 @@ function setChartLayout(n){
   grid.className = n===1 ? '' : `layout-${n}`;
 
   // Remove extra charts
-  _extraCharts.forEach(({chart, obs, tickInt})=>{
-    try{chart.remove();}catch(e){}
-    try{obs.disconnect();}catch(e){}
-    if(tickInt) clearInterval(tickInt);
+  _extraCharts.forEach(({container})=>{
+    try{ if(container) container.innerHTML=''; }catch(e){}
   });
   _extraCharts = [];
   // Remove extra cells
@@ -13229,7 +13229,7 @@ function setChartLayout(n){
     cell.className = 'chart-cell chart-cell-extra';
     cell.style.minHeight = '0';
 
-    // Pair selector (replaces static label)
+    // Pair selector
     const sel = document.createElement('select');
     sel.className = 'extra-pair-sel';
     Object.keys(BASE_PRICES).forEach(p=>{
@@ -13239,90 +13239,42 @@ function setChartLayout(n){
       if(p===pair) opt.selected = true;
       sel.appendChild(opt);
     });
-    sel.addEventListener('change', ()=>{
-      updateExtraChart(cellIdx, sel.value);
-    });
 
-    const priceEl = document.createElement('div');
-    priceEl.className = 'chart-cell-price';
-    priceEl.style.top = '28px';
-    priceEl.style.marginTop = '0';
-    const el = document.createElement('div');
-    el.style.cssText = 'position:absolute;inset:0;width:100%;height:100%';
+    // TradingView container for this cell
+    const tvId = 'tv-extra-'+cellIdx+'-'+Date.now();
+    const tvContainer = document.createElement('div');
+    tvContainer.id = tvId;
+    tvContainer.style.cssText = 'position:absolute;top:28px;left:0;right:0;bottom:0;';
+
     cell.appendChild(sel);
-    cell.appendChild(priceEl);
-    cell.appendChild(el);
+    cell.appendChild(tvContainer);
     grid.appendChild(cell);
 
-    // Init mini chart
+    // Store reference first so updateExtraChart can find it
+    const ecEntry = { pair, container: tvContainer };
+    _extraCharts.push(ecEntry);
+
+    sel.addEventListener('change', ()=>{ updateExtraChart(cellIdx, sel.value); });
+
+    // Load TradingView widget
+    const sym = TV_SYMBOLS[pair] || ('FX:'+pair);
     try{
-      const price = BASE_PRICES[pair]||1;
-      const placeholderCandles = generateSimHistory(pair, '1H', 120, price);
-      const chart = LightweightCharts.createChart(el, {
-        layout:{ background:{type:'Solid',color:'#040010'}, textColor:'rgba(255,255,255,0.4)' },
-        grid:{ vertLines:{color:'rgba(255,255,255,0.03)'}, horzLines:{color:'rgba(255,255,255,0.03)'} },
-        rightPriceScale:{ borderColor:'rgba(0,255,204,0.1)', scaleMargins:{top:0.1,bottom:0.1} },
-        timeScale:{ borderColor:'rgba(0,255,204,0.1)', timeVisible:true },
-        crosshair:{ mode:1 },
-        handleScroll:true, handleScale:true
+      new TradingView.widget({
+        autosize: true,
+        symbol: sym,
+        interval: TV_TF[currentTF]||'5',
+        timezone: 'Etc/UTC',
+        theme: document.body.classList.contains('light')?'light':'dark',
+        style: '1',
+        locale: 'en',
+        enable_publishing: false,
+        hide_top_toolbar: true,
+        hide_legend: false,
+        withdateranges: false,
+        allow_symbol_change: false,
+        container_id: tvId,
       });
-      const series = chart.addCandlestickSeries({
-        upColor:'#00ff88', downColor:'#ff0055',
-        borderUpColor:'#00ff88', borderDownColor:'#ff0055',
-        wickUpColor:'rgba(0,255,136,0.6)', wickDownColor:'rgba(255,0,85,0.6)'
-      });
-      series.setData(placeholderCandles);
-      chart.timeScale().scrollToRealTime();
-
-      // Track live price — updated by real feeds below
-      let livePrice = placeholderCandles[placeholderCandles.length-1].close;
-
-      // Load real historical data in background
-      const isCrypto = !!window.BINANCE_SYM?.[pair];
-      const isKrakenFX = window.KRAKEN_FOREX_PAIRS?.has(pair);
-      const loadReal = isCrypto
-        ? window.fetchBinanceHistory?.(pair,'1H')
-        : window.fetchYahooHistory?.(pair,'1H');
-      if(loadReal){
-        loadReal.then(rc=>{
-          if(rc?.length){
-            series.setData(rc);
-            chart.timeScale().scrollToRealTime();
-            livePrice = rc[rc.length-1].close;
-            priceEl.textContent = livePrice.toFixed(livePrice>100?2:livePrice>10?3:5);
-          }
-        }).catch(()=>{});
-      }
-
-      // Live tick: tap real price sources
-      const tickInt = setInterval(()=>{
-        let newPrice = null;
-        if(isKrakenFX && window.deriveKrakenForex){
-          newPrice = window.deriveKrakenForex(pair);
-        } else if(isCrypto && window._extraCryptoPrices){
-          newPrice = window._extraCryptoPrices[pair];
-        } else if(window._yahooExtraPrice){
-          newPrice = window._yahooExtraPrice[pair];
-        }
-        if(newPrice && newPrice > 0 && Math.abs(newPrice - livePrice)/livePrice < 0.5){
-          livePrice = newPrice;
-        }
-        const tfSecs = 3600;
-        const barTime = Math.floor(Date.now()/1000/tfSecs)*tfSecs;
-        try{
-          series.update({time:barTime, open:livePrice, high:livePrice, low:livePrice, close:livePrice});
-        }catch(e){}
-        priceEl.textContent = livePrice.toFixed(livePrice>100?2:livePrice>10?3:5);
-      }, 3000);
-
-      // Resize observer
-      const obs = new ResizeObserver(()=>{
-        const w=cell.clientWidth, h=cell.clientHeight;
-        if(w>10&&h>10) try{chart.resize(w,h);}catch(e){}
-      });
-      obs.observe(cell);
-      _extraCharts.push({chart, series, obs, tickInt, pair, priceEl});
-    }catch(e){ console.warn('mini chart error:', e); }
+    }catch(e){ console.warn('TV extra chart error:', e); }
   });
 }
 
