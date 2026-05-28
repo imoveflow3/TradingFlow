@@ -2957,6 +2957,24 @@ body.light .wl-chip:hover{background:rgba(0,0,0,0.07)}
 .st-status-box.active{border-color:rgba(0,170,255,0.4);color:var(--text)}
 .st-results{border-top:1px solid var(--border);padding-top:12px;display:none}
 .st-results-head{font-family:'Orbitron',monospace;font-size:10px;color:var(--neon2);letter-spacing:.1em;margin-bottom:10px}
+/* ── Multi-chart tester ── */
+.st-chart-sel{display:flex;gap:4px;flex-wrap:wrap;flex:1}
+.st-chart-btn{font-family:'Orbitron',monospace;font-size:8px;letter-spacing:.07em;padding:4px 9px;border:1px solid var(--border);background:transparent;color:var(--muted);border-radius:5px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.st-chart-btn:hover{border-color:rgba(0,255,204,0.4);color:rgba(255,255,255,0.7)}
+.st-chart-btn.active{border-color:var(--neon);color:var(--neon);background:rgba(0,255,204,0.08);box-shadow:0 0 8px rgba(0,255,204,0.15)}
+.st-chart-btn.has-signal{border-color:var(--neon2);color:var(--neon2);animation:pulse 1s infinite}
+.st-multi-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.st-msc{background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;position:relative;overflow:hidden}
+.st-msc.active-pos{border-color:rgba(0,255,204,0.4);box-shadow:0 0 8px rgba(0,255,204,0.1)}
+.st-msc.in-loss{border-color:rgba(255,0,85,0.35)}
+.st-msc-lbl{font-family:'Orbitron',monospace;font-size:7px;color:var(--muted);letter-spacing:.08em;margin-bottom:3px}
+.st-msc-pair{font-family:'Orbitron',monospace;font-size:10px;font-weight:900;color:var(--neon2);margin-bottom:2px}
+.st-msc-bal{font-family:'Fira Code',monospace;font-size:12px;font-weight:700;color:var(--neon)}
+.st-msc-meta{font-family:'Fira Code',monospace;font-size:8px;color:var(--muted);margin-top:2px}
+.st-msc-status{font-family:'Fira Code',monospace;font-size:8px;color:rgba(0,170,255,0.7);margin-top:3px;line-height:1.4}
+.st-msc-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);position:absolute;top:8px;right:8px}
+.st-msc-dot.live{background:var(--neon);animation:pulse 1s infinite}
+.st-msc-dot.pos{background:var(--neon2);animation:pulse .7s infinite}
 .st-trade-list{display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto}
 .st-trade-list::-webkit-scrollbar{width:3px}
 .st-trade-list::-webkit-scrollbar-thumb{background:var(--border)}
@@ -7277,6 +7295,19 @@ import time; time.sleep(60)  # run for 60 seconds</pre></div>
     <div style="font-family:'Fira Code',monospace;font-size:9px;color:var(--muted);line-height:1.6;margin-bottom:10px;padding:8px 10px;background:rgba(0,170,255,0.05);border:1px solid rgba(0,170,255,0.12);border-radius:7px">
       📡 Scans real market data live — enters &amp; exits only when your strategy conditions are met on the actual chart.
     </div>
+    <!-- Chart target selector -->
+    <div class="st-row" id="st-target-row" style="margin-bottom:8px">
+      <div class="st-label" style="min-width:64px">TEST ON</div>
+      <div class="st-chart-sel" id="st-chart-sel">
+        <button class="st-chart-btn active" id="st-cb-0" onclick="stSetTarget(0)">CHART 1</button>
+        <button class="st-chart-btn" id="st-cb-1" onclick="stSetTarget(1)" style="display:none">CHART 2</button>
+        <button class="st-chart-btn" id="st-cb-2" onclick="stSetTarget(2)" style="display:none">CHART 3</button>
+        <button class="st-chart-btn" id="st-cb-3" onclick="stSetTarget(3)" style="display:none">CHART 4</button>
+        <button class="st-chart-btn" id="st-cb-all" onclick="stSetTarget('all')" style="display:none">ALL 4</button>
+      </div>
+    </div>
+    <!-- Multi-chart live stats grid (shown in multi mode) -->
+    <div class="st-multi-grid" id="st-multi-grid" style="display:none"></div>
     <!-- Status box -->
     <div class="st-status-box" id="st-status-box">Ready — configure your strategy above and tap START.</div>
     <!-- Start / Stop -->
@@ -13181,6 +13212,7 @@ function setChartLayout(n){
   // Remove extra cells
   grid.querySelectorAll('.chart-cell-extra').forEach(el=>el.remove());
 
+  try{ stUpdateChartBtns(); }catch(_){}
   if(n===1) return;
 
   const pairs = LAYOUT_PAIRS[n] || [];
@@ -13867,6 +13899,7 @@ function openTesterPanel(){
   document.getElementById('st-overlay').style.display='block';
   document.getElementById('st-panel').style.display='block';
   lsUpdateContractHint();
+  stUpdateChartBtns();
   // Draw equity curve from real SQLite data whenever panel opens
   requestAnimationFrame(()=>{ try{ renderSQLTradeLog(); }catch(_){} });
 }
@@ -13882,8 +13915,13 @@ function onTesterStratChange(){
 
 /* ── Toggle start/stop from panel button ── */
 function toggleLiveStrategy(){
-  if(lsRunning) stopLiveStrategy();
-  else startLiveStrategy();
+  if(lsRunning){ stopLiveStrategy(); return; }
+  // Multi-chart mode: when target is chart 2, 3, 4, or ALL
+  if(lsTargetChart !== 0 && lsTargetChart !== '0'){
+    startMultiChartStrategy();
+  } else {
+    startLiveStrategy();
+  }
 }
 
 /* ── Start ── */
@@ -13947,6 +13985,8 @@ function startLiveStrategy(){
 function stopLiveStrategy(){
   lsRunning=false;
   if(lsTimer){clearInterval(lsTimer);lsTimer=null;}
+  // Stop any multi-chart sessions
+  try{ stopMultiChartSessions(); }catch(_){}
   document.getElementById('demo-acct-bar').style.display='none';
   document.getElementById('st-chart-overlay').style.display='none';
   document.getElementById('testerBtn').classList.remove('live');
@@ -13955,8 +13995,340 @@ function stopLiveStrategy(){
   startBtn.classList.remove('running');
   const statusBox=document.getElementById('st-status-box');
   statusBox.className='st-status-box';
-  statusBox.textContent='Session ended — '+lsTrades.length+' trades completed. Tap START to run again.';
-  showToast('Strategy session ended — '+lsTrades.length+' trade'+(lsTrades.length!==1?'s':''),'b');
+  // Multi-chart summary
+  const multiTotal = _stMultiSessions ? _stMultiSessions.reduce((a,s)=>a+s.trades.length,0) : 0;
+  const tradeCt = multiTotal || lsTrades.length;
+  statusBox.textContent='Session ended — '+tradeCt+' trades completed. Tap START to run again.';
+  showToast('Strategy session ended — '+tradeCt+' trade'+(tradeCt!==1?'s':''),'b');
+}
+
+/* ═══════════════════════════════════════════════════════
+   MULTI-CHART STRATEGY TESTER
+   ═══════════════════════════════════════════════════════ */
+let lsTargetChart = 0;          // 0|1|2|3|'all'
+let _stMultiSessions = [];      // [{pair,label,candles,ws,balance,unrealized,position,trades,orbHigh,orbLow,orbState,timer,running}]
+
+/* Update which chart buttons are visible based on current layout */
+function stUpdateChartBtns(){
+  const layout = typeof currentLayout !== 'undefined' ? currentLayout : 1;
+  const count = layout === 4 ? 4 : layout === 2 ? 2 : 1;
+  for(let i=1;i<4;i++){
+    const b=document.getElementById('st-cb-'+i);
+    if(b) b.style.display = i < count ? '' : 'none';
+  }
+  const allBtn=document.getElementById('st-cb-all');
+  if(allBtn) allBtn.style.display = count > 1 ? '' : 'none';
+  // If current target is now out of range, reset to 0
+  if(lsTargetChart !== 'all' && parseInt(lsTargetChart) >= count){
+    stSetTarget(0);
+  }
+}
+
+/* Set chart target and highlight button */
+function stSetTarget(t){
+  lsTargetChart = t;
+  ['0','1','2','3','all'].forEach(k=>{
+    const b=document.getElementById('st-cb-'+k);
+    if(b) b.classList.toggle('active', k===String(t));
+  });
+  // Show/hide multi-grid
+  const mg=document.getElementById('st-multi-grid');
+  if(mg) mg.style.display = t==='all' ? 'grid' : 'none';
+}
+
+/* Get list of {pair, label} for selected targets */
+function stGetTargetPairs(){
+  const chart1={pair:currentPair,label:'CHART 1',idx:0};
+  const extras=(_extraCharts||[]).map((e,i)=>({pair:e.pair||currentPair,label:'CHART '+(i+2),idx:i+1}));
+  const all=[chart1,...extras];
+  if(lsTargetChart==='all') return all;
+  const idx=parseInt(lsTargetChart)||0;
+  return [all[idx]||chart1];
+}
+
+/* Fetch Binance historical candles for a pair/tf (up to 200) */
+async function stFetchCandles(pair, tf){
+  try{
+    const BTFS={
+      '1M':'1m','5M':'5m','15M':'15m','30M':'30m',
+      '1H':'1h','4H':'4h','1D':'1d'
+    };
+    const btf=BTFS[tf]||'5m';
+    // Crypto via Binance
+    if(window.BINANCE_SYM&&BINANCE_SYM[pair]){
+      const sym=BINANCE_SYM[pair];
+      const r=await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${btf}&limit=200`);
+      if(!r.ok) throw new Error('binance http '+r.status);
+      const d=await r.json();
+      return d.map(k=>({time:Math.floor(k[0]/1000),open:+k[1],high:+k[2],low:+k[3],close:+k[4],volume:+k[5]}));
+    }
+    // Forex / gold / silver: use Kraken OHLC if available, else simulated
+    if(window.KRAKEN_FOREX_PAIRS&&KRAKEN_FOREX_PAIRS.has(pair)){
+      const KTF={'1M':1,'5M':5,'15M':15,'30M':30,'1H':60,'4H':240,'1D':1440};
+      const ktf=KTF[tf]||60;
+      const r=await fetch(`https://api.kraken.com/0/public/OHLC?pair=${pair}&interval=${ktf}&count=200`);
+      if(!r.ok) throw new Error('kraken http '+r.status);
+      const d=await r.json();
+      if(d.error&&d.error.length) throw new Error(d.error[0]);
+      const key=Object.keys(d.result||{}).find(k=>k!=='last');
+      if(!key) throw new Error('no kraken key');
+      return d.result[key].map(r=>({time:+r[0],open:+r[1],high:+r[2],low:+r[3],close:+r[4],volume:+r[6]}));
+    }
+    // Fallback: simulated history
+    return generateSimHistory(pair, tf, 200);
+  }catch(e){
+    console.warn('stFetchCandles fallback for',pair,e);
+    return generateSimHistory(pair,tf,200);
+  }
+}
+
+/* Open a WebSocket to receive live ticks for a session (extra charts) */
+function stOpenSessionWS(session){
+  const pair=session.pair, tf=currentTF;
+  const BTFS={'1M':'1m','5M':'5m','15M':'15m','30M':'30m','1H':'1h','4H':'4h','1D':'1d'};
+  const btf=BTFS[tf]||'5m';
+  // Crypto via Binance
+  if(window.BINANCE_SYM&&BINANCE_SYM[pair]){
+    const sym=BINANCE_SYM[pair].toLowerCase();
+    const ws=new WebSocket(`wss://stream.binance.com:9443/ws/${sym}@kline_${btf}`);
+    ws.onmessage=e=>{
+      try{
+        const d=JSON.parse(e.data);
+        if(!d.k) return;
+        const k=d.k;
+        const candle={time:Math.floor(k.t/1000),open:+k.o,high:+k.h,low:+k.l,close:+k.c,volume:+k.v};
+        const last=session.candles[session.candles.length-1];
+        if(last&&last.time===candle.time) session.candles[session.candles.length-1]=candle;
+        else session.candles.push(candle);
+      }catch(_){}
+    };
+    ws.onerror=()=>{};
+    ws.onclose=()=>{};
+    session.ws=ws;
+    return;
+  }
+  // Forex: Kraken WS
+  if(window.KRAKEN_FOREX_PAIRS&&KRAKEN_FOREX_PAIRS.has(pair)){
+    const ws=new WebSocket('wss://ws.kraken.com/v2');
+    ws.onopen=()=>{
+      ws.send(JSON.stringify({method:'subscribe',params:{channel:'ohlc',symbol:[pair.replace(/(.{3})(.{3})/,'$1/$2')],interval:1}}));
+    };
+    ws.onmessage=e=>{
+      try{
+        const d=JSON.parse(e.data);
+        if(d.channel!=='ohlc'||!d.data) return;
+        const o=d.data[0];
+        const candle={time:Math.floor(new Date(o.timestamp).getTime()/1000),open:+o.open,high:+o.high,low:+o.low,close:+o.close,volume:+o.volume};
+        const last=session.candles[session.candles.length-1];
+        if(last&&last.time===candle.time) session.candles[session.candles.length-1]=candle;
+        else session.candles.push(candle);
+      }catch(_){}
+    };
+    ws.onerror=()=>{};
+    ws.onclose=()=>{};
+    session.ws=ws;
+    return;
+  }
+  // No WS available — simulate ticks by updating last candle price every 3s
+  const basePrice = (window.BASE_PRICES&&BASE_PRICES[pair]) || session.candles[session.candles.length-1]?.close || 1;
+  let price=basePrice;
+  session._simTicker=setInterval(()=>{
+    if(!session.running) return;
+    price += (Math.random()-0.499)*basePrice*0.0003;
+    if(session.candles.length){
+      const last=session.candles[session.candles.length-1];
+      last.close=price;
+      last.high=Math.max(last.high,price);
+      last.low=Math.min(last.low,price);
+    }
+  },3000);
+}
+
+/* Run one strategy check for a session (simplified, pair-agnostic) */
+function stRunSessionCheck(session){
+  if(!session.running||session.candles.length<20) return;
+  const candles=session.candles;
+  const strat=lsMappedStrat();
+  const latest=candles[candles.length-1];
+  const price=latest.close;
+
+  // --- If in position, check exit ---
+  if(session.position){
+    const pos=session.position;
+    let closed=false, pnl=0, exitReason='';
+    if(pos.dir==='BUY'){
+      if(price>=pos.tp){closed=true;pnl=pos.riskAmt*(parseFloat(document.getElementById('st-tp-mult').value)||2.5);exitReason='TP hit';}
+      else if(price<=pos.sl){closed=true;pnl=-pos.riskAmt;exitReason='SL hit';}
+    } else {
+      if(price<=pos.tp){closed=true;pnl=pos.riskAmt*(parseFloat(document.getElementById('st-tp-mult').value)||2.5);exitReason='TP hit';}
+      else if(price>=pos.sl){closed=true;pnl=-pos.riskAmt;exitReason='SL hit';}
+    }
+    if(closed){
+      session.balance+=pnl;
+      session.unrealized=0;
+      session.trades.push({dir:pos.dir,entry:pos.entry,exit:price,pnl,exitReason,time:Date.now()});
+      session.position=null;
+      stRenderMultiGrid();
+      showToast(`${session.label}: ${pnl>=0?'✅ WIN':'❌ LOSS'} ${pos.dir} ${session.pair} +${pnl>=0?'+':''}$${pnl.toFixed(0)}`,'b');
+    } else {
+      // Update unrealized
+      session.unrealized = pos.dir==='BUY'
+        ? (price-pos.entry)/pos.entry*pos.riskAmt*10
+        : (pos.entry-price)/pos.entry*pos.riskAmt*10;
+      stRenderMultiGrid();
+    }
+    return;
+  }
+
+  // --- Signal detection ---
+  const closes=candles.slice(-50).map(c=>c.close);
+  let signal=null;
+
+  if(strat==='ema'){
+    const ema=n=>{let k=2/(n+1),v=closes[0];closes.forEach(c=>{v=c*k+v*(1-k)});return v;};
+    const e9=ema(9),e21=ema(21);
+    const prev=candles.slice(-51,-1).map(c=>c.close);
+    const pe9=(n=>{let k=2/(n+1),v=prev[0];prev.forEach(c=>{v=c*k+v*(1-k)});return v;})(9);
+    const pe21=(n=>{let k=2/(n+1),v=prev[0];prev.forEach(c=>{v=c*k+v*(1-k)});return v;})(21);
+    if(pe9<pe21&&e9>e21) signal='BUY';
+    else if(pe9>pe21&&e9<e21) signal='SELL';
+  } else if(strat==='rsi'){
+    const gains=[],losses=[];
+    for(let i=1;i<Math.min(15,closes.length);i++){
+      const d=closes[i]-closes[i-1];
+      gains.push(d>0?d:0);losses.push(d<0?-d:0);
+    }
+    const ag=gains.reduce((a,b)=>a+b,0)/gains.length;
+    const al=losses.reduce((a,b)=>a+b,0)/losses.length;
+    const rsi=al===0?100:100-100/(1+ag/al);
+    if(rsi<30) signal='BUY';
+    else if(rsi>70) signal='SELL';
+  } else if(strat==='vwap'){
+    const vwap=candles.slice(-20).reduce((a,c)=>a+(c.high+c.low+c.close)/3*c.volume,0)/candles.slice(-20).reduce((a,c)=>a+c.volume,0);
+    const prev=candles[candles.length-2]?.close||price;
+    if(prev<vwap&&price>vwap) signal='BUY';
+    else if(prev>vwap&&price<vwap) signal='SELL';
+  } else if(strat==='bb'){
+    const n=20,slice=closes.slice(-n);
+    const mean=slice.reduce((a,b)=>a+b,0)/n;
+    const std=Math.sqrt(slice.reduce((a,b)=>a+(b-mean)**2,0)/n);
+    const upper=mean+2*std,lower=mean-2*std;
+    if(price<lower) signal='BUY';
+    else if(price>upper) signal='SELL';
+  } else if(strat==='orb'){
+    const orbN=parseInt(document.getElementById('st-orb-candles').value)||5;
+    if(session.orbState==='WATCH'){
+      const slice=candles.slice(-orbN);
+      session.orbHigh=Math.max(...slice.map(c=>c.high));
+      session.orbLow=Math.min(...slice.map(c=>c.low));
+      session.orbState='READY';
+    }
+    if(session.orbState==='READY'){
+      if(price>session.orbHigh) signal='BUY';
+      else if(price<session.orbLow) signal='SELL';
+    }
+  }
+
+  if(!signal) return;
+
+  // Build position
+  const atr=candles.slice(-14).reduce((a,c,i,arr)=>{
+    if(i===0) return 0;
+    return a+Math.max(c.high-c.low,Math.abs(c.high-arr[i-1].close),Math.abs(c.low-arr[i-1].close));
+  },0)/13;
+  const slMult=parseFloat(document.getElementById('st-sl-mult').value)||1;
+  const tpMult=parseFloat(document.getElementById('st-tp-mult').value)||2.5;
+  const slDist=atr*slMult;
+  const riskAmt=session.balance*0.01;
+  const sl=signal==='BUY'?price-slDist:price+slDist;
+  const tp=signal==='BUY'?price+slDist*tpMult:price-slDist*tpMult;
+
+  session.position={dir:signal,entry:price,sl,tp,riskAmt,slDist};
+  session.orbState=session.orbState==='READY'?'TRADED':'WATCH';
+  stRenderMultiGrid();
+  showToast(`${session.label}: ${signal} signal on ${session.pair} @ ${price.toFixed(5)}`,'b');
+}
+
+/* Render the multi-chart stat grid */
+function stRenderMultiGrid(){
+  const mg=document.getElementById('st-multi-grid');
+  if(!mg) return;
+  mg.innerHTML='';
+  _stMultiSessions.forEach(session=>{
+    const wins=session.trades.filter(t=>t.pnl>0).length;
+    const wr=session.trades.length?Math.round(wins/session.trades.length*100):0;
+    const totalPnl=session.trades.reduce((a,t)=>a+t.pnl,0);
+    const pnlColor=totalPnl>=0?'var(--neon)':'var(--red)';
+    const hasPos=!!session.position;
+    const card=document.createElement('div');
+    card.className='st-msc'+(hasPos?' active-pos':'')+(totalPnl<-100?' in-loss':'');
+    card.innerHTML=`
+      <div class="st-msc-dot ${session.running?hasPos?'pos':'live':''}"></div>
+      <div class="st-msc-lbl">${session.label}</div>
+      <div class="st-msc-pair">${session.pair}</div>
+      <div class="st-msc-bal" style="color:${pnlColor}">$${session.balance.toFixed(0)}</div>
+      <div class="st-msc-meta">${session.trades.length} trades · ${wr}% WR · P&L <span style="color:${pnlColor}">${totalPnl>=0?'+':''}$${totalPnl.toFixed(0)}</span></div>
+      <div class="st-msc-status">${hasPos?`IN ${session.position.dir} @ ${session.position.entry.toFixed(5)}`:'Scanning...'}</div>
+    `;
+    mg.appendChild(card);
+  });
+}
+
+/* Start multi-chart strategy sessions */
+async function startMultiChartStrategy(){
+  const targets=stGetTargetPairs();
+  _stMultiSessions=[];
+
+  // Show multi-grid
+  const mg=document.getElementById('st-multi-grid');
+  if(mg){ mg.style.display='grid'; mg.innerHTML=''; }
+
+  for(const target of targets){
+    const session={
+      pair:target.pair, label:target.label, idx:target.idx,
+      candles:[], ws:null, _simTicker:null,
+      balance:demoSize, unrealized:0, position:null, trades:[],
+      orbHigh:-Infinity, orbLow:Infinity, orbState:'WATCH', running:true, timer:null
+    };
+    // For chart 1, inherit existing liveCandles
+    if(target.idx===0){
+      session.candles=[...liveCandles];
+      // Chart 1 live ticks auto-flow into liveCandles — refresh session.candles periodically
+    } else {
+      // Fetch historical candles then open live WS
+      session.candles=await stFetchCandles(target.pair, currentTF);
+      stOpenSessionWS(session);
+    }
+    session.timer=setInterval(()=>{
+      if(!session.running) return;
+      // Sync chart 1 candles from global liveCandles
+      if(session.idx===0 && liveCandles.length) session.candles=liveCandles;
+      stRunSessionCheck(session);
+    },2000);
+    _stMultiSessions.push(session);
+  }
+
+  stRenderMultiGrid();
+
+  // Update start button
+  const startBtn=document.getElementById('st-start-btn');
+  startBtn.textContent='■ STOP LIVE SESSION';
+  startBtn.classList.add('running');
+  document.getElementById('testerBtn').classList.add('live');
+  lsRunning=true; // keep global flag so stop button works
+}
+
+/* Stop all multi-chart sessions */
+function stopMultiChartSessions(){
+  _stMultiSessions.forEach(s=>{
+    s.running=false;
+    if(s.timer){clearInterval(s.timer);s.timer=null;}
+    if(s._simTicker){clearInterval(s._simTicker);s._simTicker=null;}
+    if(s.ws){ try{s.ws.close();}catch(e){} s.ws=null; }
+  });
+  const mg=document.getElementById('st-multi-grid');
+  if(mg) mg.style.display='none';
+  _stMultiSessions=[];
 }
 
 /* ── Map custom text to strategy id ── */
