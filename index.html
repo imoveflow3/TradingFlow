@@ -1649,6 +1649,32 @@ body.light #boot-tagline{color:rgba(37,99,235,0.4);}
   display:flex;align-items:center;justify-content:center;transition:all 120ms;
 }
 .sj-del:hover{background:rgba(255,0,85,0.12);border-color:rgba(255,0,85,0.3);color:var(--red)}
+/* ── Strategy Feed inside Setup Journal ── */
+#sj-feed-section{border-top:1px solid rgba(0,255,204,0.1);margin-top:4px;padding-top:4px;display:none}
+.sj-feed-head{display:flex;align-items:center;gap:6px;padding:6px 6px 4px;font-family:'Orbitron',monospace;font-size:8px;color:var(--neon);letter-spacing:.09em}
+.sj-feed-dot{width:6px;height:6px;border-radius:50%;background:var(--neon);animation:pulse 1s infinite;flex-shrink:0}
+.sj-feed-list{display:flex;flex-direction:column;gap:0;max-height:220px;overflow-y:auto}
+.sj-feed-list::-webkit-scrollbar{width:2px}
+.sj-feed-list::-webkit-scrollbar-thumb{background:rgba(0,255,204,0.2);border-radius:2px}
+.sj-feed-entry{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,0.03);display:flex;flex-direction:column;gap:2px}
+.sj-feed-entry:last-child{border-bottom:none}
+.sj-feed-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.sj-feed-chart{font-family:'Orbitron',monospace;font-size:7px;font-weight:700;letter-spacing:.07em;padding:1px 5px;border-radius:3px;border:1px solid;flex-shrink:0}
+.sj-feed-chart.c0{color:var(--neon);border-color:rgba(0,255,204,0.3);background:rgba(0,255,204,0.06)}
+.sj-feed-chart.c1{color:var(--neon2);border-color:rgba(0,170,255,0.3);background:rgba(0,170,255,0.06)}
+.sj-feed-chart.c2{color:#bf00ff;border-color:rgba(191,0,255,0.3);background:rgba(191,0,255,0.06)}
+.sj-feed-chart.c3{color:var(--gold);border-color:rgba(255,170,0,0.3);background:rgba(255,170,0,0.06)}
+.sj-feed-strat{font-family:'Orbitron',monospace;font-size:7px;color:rgba(255,255,255,0.35);letter-spacing:.05em}
+.sj-feed-pair{font-family:'Fira Code',monospace;font-size:8px;color:rgba(255,255,255,0.5)}
+.sj-feed-time{font-family:'Fira Code',monospace;font-size:7px;color:var(--muted);margin-left:auto}
+.sj-feed-msg{font-family:'Rajdhani',sans-serif;font-size:11px;line-height:1.4}
+.sj-feed-msg.signal-buy{color:#00ff88}
+.sj-feed-msg.signal-sell{color:#ff6b9d}
+.sj-feed-msg.trade-win{color:var(--neon)}
+.sj-feed-msg.trade-loss{color:var(--red)}
+.sj-feed-msg.scan{color:rgba(255,255,255,0.45)}
+.sj-feed-msg.started{color:rgba(0,170,255,0.8)}
+.sj-feed-msg.stopped{color:rgba(255,255,255,0.3)}
 
 /* ── SCROLL FOR MORE HINT ── */
 #chart-scroll-hint{
@@ -6220,6 +6246,16 @@ body.light .profile-field-row{background:rgba(0,0,0,0.03);border-color:rgba(0,0,
           </div>
           <div class="sj-body" id="sj-body">
             <div class="sj-empty" id="sj-empty">No setups marked yet — hit ◈ MARK SETUP on the chart to log a trade idea</div>
+          </div>
+          <!-- Live Strategy Feed — shown when any session is running -->
+          <div id="sj-feed-section">
+            <div class="sj-feed-head">
+              <div class="sj-feed-dot"></div>
+              LIVE STRATEGY FEED
+              <span style="font-family:'Fira Code',monospace;font-size:7px;color:var(--muted);font-weight:400;margin-left:auto" id="sj-feed-count">0 events</span>
+              <button onclick="stClearFeed()" style="background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:3px;color:var(--muted);font-size:7px;font-family:'Orbitron',monospace;cursor:pointer;padding:1px 5px;letter-spacing:.05em">CLEAR</button>
+            </div>
+            <div class="sj-feed-list" id="sj-feed-list"></div>
           </div>
         </div>
 
@@ -14238,12 +14274,30 @@ function stRunSessionCheck(session){
       session.trades.push({dir:pos.dir,entry:pos.entry,exit:price,pnl,exitReason,time:Date.now()});
       session.position=null;
       stRenderMultiGrid();
-      showToast(`${session.label}: ${pnl>=0?'✅ WIN':'❌ LOSS'} ${pos.dir} ${session.pair} +${pnl>=0?'+':''}$${pnl.toFixed(0)}`,'b');
+      const won = pnl >= 0;
+      stLogFeed(session,
+        (won ? '✅ TRADE CLOSED — WIN' : '❌ TRADE CLOSED — LOSS')
+        + ` | ${pos.dir} exited @ ${price.toFixed(5)} (${exitReason})`
+        + ` | P&L: ${won?'+':''}$${pnl.toFixed(0)}`
+        + ` | Balance: $${session.balance.toFixed(0)}`,
+        won ? 'trade-win' : 'trade-loss'
+      );
+      showToast(`${session.label}: ${won?'✅ WIN':'❌ LOSS'} ${pos.dir} ${session.pair} ${won?'+':''}$${pnl.toFixed(0)}`,'b');
     } else {
       // Update unrealized
-      session.unrealized = pos.dir==='BUY'
+      const unr = pos.dir==='BUY'
         ? (price-pos.entry)/pos.entry*pos.riskAmt*10
         : (pos.entry-price)/pos.entry*pos.riskAmt*10;
+      session.unrealized = unr;
+      // Log unrealized update every ~30 seconds (avoid spamming)
+      const now = Date.now();
+      if(!session._lastUnrLog || now - session._lastUnrLog > 30000){
+        session._lastUnrLog = now;
+        stLogFeed(session,
+          `IN ${pos.dir} @ ${pos.entry.toFixed(5)} | Current: ${price.toFixed(5)} | Unrealized: ${unr>=0?'+':''}$${unr.toFixed(0)} | TP: ${pos.tp.toFixed(5)} | SL: ${pos.sl.toFixed(5)}`,
+          unr >= 0 ? 'signal-buy' : 'signal-sell'
+        );
+      }
       stRenderMultiGrid();
     }
     return;
@@ -14312,6 +14366,20 @@ function stRunSessionCheck(session){
   session.position={dir:signal,entry:price,sl,tp,riskAmt,slDist};
   session.orbState=session.orbState==='READY'?'TRADED':'WATCH';
   stRenderMultiGrid();
+
+  // Describe WHY the signal fired
+  const signalReason = {
+    ema: signal==='BUY' ? '9 EMA crossed above 21 EMA — bullish crossover' : '9 EMA crossed below 21 EMA — bearish crossover',
+    rsi: signal==='BUY' ? 'RSI dropped below 30 — oversold reversal' : 'RSI climbed above 70 — overbought reversal',
+    vwap: signal==='BUY' ? 'Price crossed above VWAP — bullish momentum' : 'Price crossed below VWAP — bearish momentum',
+    bb: signal==='BUY' ? 'Price touched lower Bollinger Band — mean reversion long' : 'Price touched upper Bollinger Band — mean reversion short',
+    orb: signal==='BUY' ? `Price broke above ORB high (${session.orbHigh?.toFixed(5)}) — long breakout` : `Price broke below ORB low (${session.orbLow?.toFixed(5)}) — short breakout`,
+  }[strat] || `${strat.toUpperCase()} signal triggered`;
+
+  stLogFeed(session,
+    `🚨 ${signal} SIGNAL — ${signalReason} | Entry: ${price.toFixed(5)} | TP: ${tp.toFixed(5)} | SL: ${sl.toFixed(5)} | Risk: $${riskAmt.toFixed(0)}`,
+    signal === 'BUY' ? 'signal-buy' : 'signal-sell'
+  );
   showToast(`${session.label}: ${signal} signal on ${session.pair} @ ${price.toFixed(5)}`,'b');
 }
 
@@ -14391,6 +14459,10 @@ async function stStartSingleSession(idx){
   stRefreshChartBtnStates();
   stRenderMultiGrid();
   const stratName=_ST_STRAT_SHORT[cfg.strategy]||cfg.strategy||'';
+  stLogFeed(session,
+    `▶ Session started — scanning ${target.pair} on ${currentTF} timeframe | Demo balance: $${demoSize.toLocaleString()} | TP ×${cfg.tpMult} · SL ×${cfg.slMult}`,
+    'started'
+  );
   showToast('▶ '+target.label+' · '+target.pair+' · '+stratName+' started','b');
 }
 
@@ -14403,6 +14475,14 @@ function stStopSingleSession(idx){
   if(session._simTicker){clearInterval(session._simTicker);session._simTicker=null;}
   if(session.ws){try{session.ws.close();}catch(e){} session.ws=null;}
   _stMultiSessions=_stMultiSessions.filter(s=>s.idx!==idx);
+  // Log to feed before removing session
+  const wins=session.trades.filter(t=>t.pnl>0).length;
+  const wr=session.trades.length?Math.round(wins/session.trades.length*100):0;
+  const totalPnl=session.trades.reduce((a,t)=>a+t.pnl,0);
+  stLogFeed(session,
+    `■ Session ended — ${session.trades.length} trades | Win rate: ${wr}% | Net P&L: ${totalPnl>=0?'+':''}$${totalPnl.toFixed(0)} | Final balance: $${session.balance.toFixed(0)}`,
+    'stopped'
+  );
   showToast('■ Stopped '+session.label+' ('+session.pair+'  '+(_ST_STRAT_SHORT[session.config?.strategy]||'')+')', 'b');
 
   // Only reset global UI if no sessions at all are left
@@ -14410,10 +14490,74 @@ function stStopSingleSession(idx){
   if(!anyLeft){
     lsRunning=false;
     document.getElementById('testerBtn').classList.remove('live');
+    // Keep feed visible so user can review — dot stops pulsing via CSS
+    const dot = document.querySelector('#sj-feed-section .sj-feed-dot');
+    if(dot){ dot.style.animation='none'; dot.style.background='var(--muted)'; }
   }
   // Never touch other sessions — just refresh display
   stRefreshChartBtnStates();
   stRenderMultiGrid();
+}
+
+/* ── Strategy Feed (Setup Journal live log) ── */
+let _sjFeedCount = 0;
+
+function stLogFeed(session, msgText, type){
+  const section = document.getElementById('sj-feed-section');
+  const list    = document.getElementById('sj-feed-list');
+  const countEl = document.getElementById('sj-feed-count');
+  if(!list) return;
+
+  // Show feed section
+  if(section) section.style.display = 'block';
+
+  _sjFeedCount++;
+  if(countEl) countEl.textContent = _sjFeedCount + ' event' + (_sjFeedCount !== 1 ? 's' : '');
+
+  const now = new Date();
+  const ts  = now.toTimeString().slice(0,8);
+  const idx  = session.idx || 0;
+  const colorClass = 'c' + (idx % 4);
+  const stratShort = (_ST_STRAT_SHORT && _ST_STRAT_SHORT[session.config?.strategy]) || (session.config?.strategy || '').toUpperCase().slice(0,4) || '—';
+
+  const entry = document.createElement('div');
+  entry.className = 'sj-feed-entry';
+  entry.innerHTML = `
+    <div class="sj-feed-top">
+      <span class="sj-feed-chart ${colorClass}">${session.label}</span>
+      <span class="sj-feed-strat">${stratShort}</span>
+      <span class="sj-feed-pair">${session.pair}</span>
+      <span class="sj-feed-time">${ts}</span>
+    </div>
+    <div class="sj-feed-msg ${type}">${msgText}</div>
+  `;
+
+  // Prepend so newest is on top
+  list.insertBefore(entry, list.firstChild);
+
+  // Cap at 60 entries
+  while(list.children.length > 60) list.removeChild(list.lastChild);
+
+  // Auto-expand journal if collapsed
+  const body = document.getElementById('sj-body');
+  const toggle = document.getElementById('sj-toggle');
+  if(body && body.style.display === 'none'){
+    body.style.display = '';
+    if(toggle) toggle.style.transform = '';
+  }
+}
+
+function stClearFeed(){
+  const list = document.getElementById('sj-feed-list');
+  if(list) list.innerHTML = '';
+  _sjFeedCount = 0;
+  const countEl = document.getElementById('sj-feed-count');
+  if(countEl) countEl.textContent = '0 events';
+}
+
+function stHideFeed(){
+  const section = document.getElementById('sj-feed-section');
+  if(section) section.style.display = 'none';
 }
 
 /* Highlight chart buttons based on which sessions are currently running */
