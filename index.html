@@ -6090,12 +6090,13 @@ body.light .profile-field-row{background:rgba(0,0,0,0.03);border-color:rgba(0,0,
             <div class="st-co-sub" id="st-co-sub"></div>
           </div>
           <!-- Strategy Trade HUD — visible on chart during active trade -->
-          <div id="st-trade-hud" style="display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:30;min-width:300px;max-width:420px;background:rgba(2,4,24,0.97);border-radius:12px;border:1px solid rgba(0,212,255,0.4);box-shadow:0 0 30px rgba(0,212,255,0.2),0 8px 32px rgba(0,0,0,0.6);overflow:hidden;pointer-events:none">
+          <div id="st-trade-hud" style="display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:30;min-width:300px;max-width:420px;background:rgba(2,4,24,0.97);border-radius:12px;border:1px solid rgba(0,212,255,0.4);box-shadow:0 0 30px rgba(0,212,255,0.2),0 8px 32px rgba(0,0,0,0.6);overflow:hidden;pointer-events:auto">
             <div id="st-hud-header" style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid rgba(255,255,255,0.06);font-family:'Orbitron',monospace;font-size:9px;letter-spacing:.12em">
               <div id="st-hud-dot" style="width:7px;height:7px;border-radius:50%;background:#00ffcc;animation:pulse 1s infinite;flex-shrink:0"></div>
               <span id="st-hud-dir" style="font-size:11px;font-weight:900;color:#00ffcc;letter-spacing:.08em">BUY</span>
               <span id="st-hud-pair" style="color:rgba(255,255,255,0.5)">BTC/USD</span>
               <span style="margin-left:auto;color:rgba(255,255,255,0.35)">LIVE TRADE</span>
+              <button onclick="document.getElementById('st-trade-hud').style.display='none'" style="margin-left:8px;background:rgba(255,255,255,0.07);border:none;color:rgba(255,255,255,0.4);cursor:pointer;border-radius:4px;padding:2px 6px;font-size:12px;line-height:1">✕</button>
             </div>
             <div style="padding:10px 14px;display:flex;flex-direction:column;gap:8px">
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
@@ -11341,8 +11342,21 @@ let _metalsLiveCache = null;
 let _metalsLiveFetchTs = 0;
 
 async function fetchMetalsLivePrice(pair){
+  // Source 1: gold-api.com — real-time spot, free, no key
+  if(pair==='XAUUSD'||pair==='XAGUSD'){
+    try{
+      const sym = pair==='XAUUSD'?'XAU':'XAG';
+      const r = await fetch(`https://api.gold-api.com/price/${sym}`,{signal:AbortSignal.timeout(5000)});
+      if(r.ok){
+        const d = await r.json();
+        const p = d?.price || d?.ask || d?.bid;
+        if(p && p > 0){ setLiveSource('GOLD-API LIVE'); return +p; }
+      }
+    }catch(e){}
+  }
+
+  // Source 2: metals.live — cached 10s
   try{
-    // Cache for 10s to avoid hammering
     if(_metalsLiveCache && Date.now()-_metalsLiveFetchTs < 10000){
       const c = _metalsLiveCache;
       if(pair==='XAUUSD') return c.gold||null;
