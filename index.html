@@ -5994,52 +5994,12 @@ body.light .profile-field-row{background:rgba(0,0,0,0.03);border-color:rgba(0,0,
         </div>
 
         <!-- ── ROW 2: Prop firm rule progress bars ── -->
-        <div class="da-row2">
-
-          <!-- Daily Loss Limit -->
-          <div class="da-rule-wrap">
-            <div class="da-rule-head">
-              <span class="da-rule-name">DAILY LOSS LIMIT (5%)</span>
-              <span class="da-rule-pct" id="da-ddaily-pct" style="color:var(--neon)">0%</span>
-            </div>
-            <div class="da-rule-track">
-              <div class="da-rule-fill" id="da-ddaily-fill" style="width:0%;background:var(--neon)"></div>
-            </div>
-            <div class="da-rule-amt" id="da-ddaily-amt">$0 used of <span id="da-ddaily-limit">$2,500</span></div>
-          </div>
-
-          <!-- Max Drawdown -->
-          <div class="da-rule-wrap">
-            <div class="da-rule-head">
-              <span class="da-rule-name">MAX DRAWDOWN (10%)</span>
-              <span class="da-rule-pct" id="da-maxdd-pct" style="color:var(--neon)">0%</span>
-            </div>
-            <div class="da-rule-track">
-              <div class="da-rule-fill" id="da-maxdd-fill" style="width:0%;background:var(--neon)"></div>
-            </div>
-            <div class="da-rule-amt" id="da-maxdd-amt">$0 used of <span id="da-maxdd-limit">$5,000</span></div>
-          </div>
-
-          <!-- Profit Target -->
-          <div class="da-rule-wrap">
-            <div class="da-rule-head">
-              <span class="da-rule-name">PROFIT TARGET (10%)</span>
-              <span class="da-rule-pct" id="da-target-pct" style="color:var(--neon)">0%</span>
-            </div>
-            <div class="da-rule-track">
-              <div class="da-rule-fill" id="da-target-fill" style="width:0%;background:var(--neon2)"></div>
-            </div>
-            <div class="da-rule-amt" id="da-target-amt">$0 of <span id="da-target-goal">$5,000</span> goal</div>
-          </div>
-
-          <!-- Tick value -->
-          <div class="da-rule-wrap" style="max-width:130px">
-            <div class="da-rule-head">
-              <span class="da-rule-name">TICK VALUE</span>
-            </div>
-            <div class="da-val" id="da-tick" style="font-size:11px;font-family:'Fira Code',monospace;color:var(--gold);margin-top:2px">—</div>
-          </div>
-
+        <!-- hidden elements kept for JS compatibility -->
+        <div style="display:none">
+          <span id="da-ddaily-pct"></span><div id="da-ddaily-fill"></div><div id="da-ddaily-amt"></div><span id="da-ddaily-limit"></span>
+          <span id="da-maxdd-pct"></span><div id="da-maxdd-fill"></div><div id="da-maxdd-amt"></div><span id="da-maxdd-limit"></span>
+          <span id="da-target-pct"></span><div id="da-target-fill"></div><div id="da-target-amt"></div><span id="da-target-goal"></span>
+          <div id="da-tick"></div>
         </div>
 
         <!-- ── ROW 3: Open position detail (visible when in trade) ── -->
