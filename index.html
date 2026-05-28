@@ -13916,12 +13916,8 @@ function onTesterStratChange(){
 /* ── Toggle start/stop from panel button ── */
 function toggleLiveStrategy(){
   if(lsRunning){ stopLiveStrategy(); return; }
-  // Multi-chart mode: when target is chart 2, 3, 4, or ALL
-  if(lsTargetChart !== 0 && lsTargetChart !== '0'){
-    startMultiChartStrategy();
-  } else {
-    startLiveStrategy();
-  }
+  // Always start on chart 1 — extra charts are added via their buttons
+  startLiveStrategy();
 }
 
 /* ── Start ── */
@@ -14000,6 +13996,7 @@ function stopLiveStrategy(){
   const tradeCt = multiTotal || lsTrades.length;
   statusBox.textContent='Session ended — '+tradeCt+' trades completed. Tap START to run again.';
   showToast('Strategy session ended — '+tradeCt+' trade'+(tradeCt!==1?'s':''),'b');
+  try{ stRefreshChartBtnStates(); }catch(_){}
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -14026,22 +14023,20 @@ function stUpdateChartBtns(){
 
 /* Set chart target and highlight button */
 function stSetTarget(t){
-  // If a session is running, stop it before switching charts
-  if(lsRunning){ stopLiveStrategy(); }
-  lsTargetChart = t;
-  ['0','1','2','3','all'].forEach(k=>{
-    const b=document.getElementById('st-cb-'+k);
-    if(b) b.classList.toggle('active', k===String(t));
-  });
-  // Show/hide multi-grid
-  const mg=document.getElementById('st-multi-grid');
-  if(mg) mg.style.display = t==='all' ? 'grid' : 'none';
-  // Reset status box to ready state
-  const sb=document.getElementById('st-status-box');
-  if(sb){ sb.className='st-status-box'; sb.textContent='Ready — configure your strategy above and tap START.'; }
-  // Reset start button
-  const startBtn=document.getElementById('st-start-btn');
-  if(startBtn){ startBtn.textContent='▶ START LIVE SESSION'; startBtn.classList.remove('running'); }
+  if(t === 'all'){
+    // ALL 4 — start sessions for every chart that isn't already running
+    stGetTargetPairs().forEach(target=>{ if(!_stMultiSessions.find(s=>s.idx===target.idx&&s.running)) stStartSingleSession(target.idx); });
+    return;
+  }
+  const idx = parseInt(t);
+  const existing = _stMultiSessions.find(s=>s.idx===idx);
+  if(existing && existing.running){
+    // Already running on this chart — stop just this one
+    stStopSingleSession(idx);
+  } else {
+    // Not running yet — add this chart to testing (keep others running)
+    stStartSingleSession(idx);
+  }
 }
 
 /* Get list of {pair, label} for selected targets */
@@ -14280,6 +14275,97 @@ function stRenderMultiGrid(){
     `;
     mg.appendChild(card);
   });
+}
+
+/* Start a session for a single chart index */
+async function stStartSingleSession(idx){
+  const chart1={pair:currentPair,label:'CHART 1',idx:0};
+  const extras=(_extraCharts||[]).map((e,i)=>({pair:e.pair||currentPair,label:'CHART '+(i+2),idx:i+1}));
+  const allCharts=[chart1,...extras];
+  const target=allCharts[idx]||chart1;
+
+  // Don't duplicate
+  if(_stMultiSessions.find(s=>s.idx===idx&&s.running)) return;
+  // Remove any stale entry for this idx
+  _stMultiSessions=_stMultiSessions.filter(s=>s.idx!==idx);
+
+  const session={
+    pair:target.pair, label:target.label, idx,
+    candles:[], ws:null, _simTicker:null,
+    balance:demoSize, unrealized:0, position:null, trades:[],
+    orbHigh:-Infinity, orbLow:Infinity, orbState:'WATCH', running:true, timer:null
+  };
+
+  if(idx===0){
+    session.candles=[...liveCandles];
+  } else {
+    session.candles=await stFetchCandles(target.pair, currentTF);
+    stOpenSessionWS(session);
+  }
+
+  session.timer=setInterval(()=>{
+    if(!session.running) return;
+    if(idx===0&&liveCandles.length) session.candles=liveCandles;
+    stRunSessionCheck(session);
+  },2000);
+
+  _stMultiSessions.push(session);
+
+  // Show multi-grid
+  const mg=document.getElementById('st-multi-grid');
+  if(mg) mg.style.display='grid';
+
+  // Mark global running flag so STOP button works
+  lsRunning=true;
+  document.getElementById('testerBtn').classList.add('live');
+  const startBtn=document.getElementById('st-start-btn');
+  startBtn.textContent='■ STOP LIVE SESSION';
+  startBtn.classList.add('running');
+
+  stRefreshChartBtnStates();
+  stRenderMultiGrid();
+  showToast('▶ Testing started on '+target.label+' ('+target.pair+')','b');
+}
+
+/* Stop a single chart session by index */
+function stStopSingleSession(idx){
+  const session=_stMultiSessions.find(s=>s.idx===idx);
+  if(!session) return;
+  session.running=false;
+  if(session.timer){clearInterval(session.timer);session.timer=null;}
+  if(session._simTicker){clearInterval(session._simTicker);session._simTicker=null;}
+  if(session.ws){try{session.ws.close();}catch(e){} session.ws=null;}
+  _stMultiSessions=_stMultiSessions.filter(s=>s.idx!==idx);
+  showToast('■ Testing stopped on '+session.label,'b');
+
+  // If no sessions left, reset everything
+  if(!_stMultiSessions.some(s=>s.running)&&!lsTimer){
+    lsRunning=false;
+    document.getElementById('testerBtn').classList.remove('live');
+    const startBtn=document.getElementById('st-start-btn');
+    startBtn.textContent='▶ START LIVE SESSION';
+    startBtn.classList.remove('running');
+    const mg=document.getElementById('st-multi-grid');
+    if(mg) mg.style.display='none';
+    const sb=document.getElementById('st-status-box');
+    if(sb){ sb.className='st-status-box'; sb.textContent='Ready — configure your strategy above and tap START.'; }
+  }
+  stRefreshChartBtnStates();
+  stRenderMultiGrid();
+}
+
+/* Highlight chart buttons based on which sessions are currently running */
+function stRefreshChartBtnStates(){
+  ['0','1','2','3'].forEach(k=>{
+    const b=document.getElementById('st-cb-'+k);
+    if(!b) return;
+    const running=_stMultiSessions.some(s=>s.idx===parseInt(k)&&s.running);
+    b.classList.toggle('active', running);
+    b.style.borderColor = running ? 'var(--neon)' : '';
+  });
+  // ALL button active if any session running
+  const allBtn=document.getElementById('st-cb-all');
+  if(allBtn) allBtn.classList.toggle('active',_stMultiSessions.some(s=>s.running));
 }
 
 /* Start multi-chart strategy sessions */
