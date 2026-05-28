@@ -7295,23 +7295,29 @@ import time; time.sleep(60)  # run for 60 seconds</pre></div>
     <div style="font-family:'Fira Code',monospace;font-size:9px;color:var(--muted);line-height:1.6;margin-bottom:10px;padding:8px 10px;background:rgba(0,170,255,0.05);border:1px solid rgba(0,170,255,0.12);border-radius:7px">
       📡 Scans real market data live — enters &amp; exits only when your strategy conditions are met on the actual chart.
     </div>
-    <!-- Chart target selector -->
-    <div class="st-row" id="st-target-row" style="margin-bottom:8px">
-      <div class="st-label" style="min-width:64px">TEST ON</div>
+    <!-- Chart target selector — each button = one chart, click to configure it -->
+    <div style="margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+        <div class="st-label" style="min-width:0;font-size:8px">SELECT CHART</div>
+        <div id="st-config-lbl" style="font-family:'Orbitron',monospace;font-size:7px;color:rgba(0,170,255,0.7);letter-spacing:.08em">CONFIGURING: CHART 1</div>
+      </div>
       <div class="st-chart-sel" id="st-chart-sel">
-        <button class="st-chart-btn active" id="st-cb-0" onclick="stSetTarget(0)">CHART 1</button>
-        <button class="st-chart-btn" id="st-cb-1" onclick="stSetTarget(1)" style="display:none">CHART 2</button>
-        <button class="st-chart-btn" id="st-cb-2" onclick="stSetTarget(2)" style="display:none">CHART 3</button>
-        <button class="st-chart-btn" id="st-cb-3" onclick="stSetTarget(3)" style="display:none">CHART 4</button>
-        <button class="st-chart-btn" id="st-cb-all" onclick="stSetTarget('all')" style="display:none">ALL 4</button>
+        <button class="st-chart-btn active" id="st-cb-0" onclick="stSetTarget(0)">C1 · ORB</button>
+        <button class="st-chart-btn" id="st-cb-1" onclick="stSetTarget(1)" style="display:none">C2 · EMA</button>
+        <button class="st-chart-btn" id="st-cb-2" onclick="stSetTarget(2)" style="display:none">C3 · RSI</button>
+        <button class="st-chart-btn" id="st-cb-3" onclick="stSetTarget(3)" style="display:none">C4 · VWAP</button>
+        <button class="st-chart-btn" id="st-cb-all" onclick="stSetTarget('all')" style="display:none;font-size:7px">▶ ALL</button>
+      </div>
+      <div style="font-family:'Fira Code',monospace;font-size:8px;color:var(--muted);margin-top:4px">
+        Click a chart to configure its strategy, then hit START ↓
       </div>
     </div>
-    <!-- Multi-chart live stats grid (shown in multi mode) -->
+    <!-- Multi-chart live stats grid -->
     <div class="st-multi-grid" id="st-multi-grid" style="display:none"></div>
     <!-- Status box -->
-    <div class="st-status-box" id="st-status-box">Ready — configure your strategy above and tap START.</div>
-    <!-- Start / Stop -->
-    <button class="st-start-btn" id="st-start-btn" onclick="toggleLiveStrategy()">▶ START LIVE SESSION</button>
+    <div class="st-status-box" id="st-status-box">Select a chart above, set its strategy, then tap START.</div>
+    <!-- Start / Stop — targets the currently focused chart -->
+    <button class="st-start-btn" id="st-start-btn" onclick="toggleLiveStrategy()">▶ START CHART 1</button>
     <!-- Trade log -->
     <div class="st-results" id="st-results">
       <div class="st-results-head">TRADE LOG <span style="font-size:8px;color:rgba(0,255,204,0.4);font-family:'Fira Code',monospace;font-weight:400;margin-left:6px">SQLite</span></div>
@@ -13900,6 +13906,8 @@ function openTesterPanel(){
   document.getElementById('st-panel').style.display='block';
   lsUpdateContractHint();
   stUpdateChartBtns();
+  stLoadConfig(_stFocusedChart); // load focused chart's settings into form
+  stRefreshChartBtnStates();
   // Draw equity curve from real SQLite data whenever panel opens
   requestAnimationFrame(()=>{ try{ renderSQLTradeLog(); }catch(_){} });
 }
@@ -13911,13 +13919,27 @@ function onTesterStratChange(){
   const v=document.getElementById('st-strat-select').value;
   document.getElementById('st-custom-wrap').style.display=v==='custom'?'block':'none';
   document.getElementById('st-orb-row').style.display=v==='orb'?'flex':'none';
+  // Auto-save to focused chart's config and refresh button labels
+  try{ stSaveCurrentConfig(); stRefreshChartBtnStates(); }catch(_){}
 }
 
 /* ── Toggle start/stop from panel button ── */
 function toggleLiveStrategy(){
-  if(lsRunning){ stopLiveStrategy(); return; }
-  // Always start on chart 1 — extra charts are added via their buttons
-  startLiveStrategy();
+  const focused = _stFocusedChart||0;
+  const existingSession = _stMultiSessions.find(s=>s.idx===focused&&s.running);
+
+  if(existingSession){
+    // Stop just the focused chart's session
+    stStopSingleSession(focused);
+  } else if(focused===0 && !_stMultiSessions.some(s=>s.idx===0)){
+    // Chart 1 with no active multi-session — use original single-chart tester
+    stSaveCurrentConfig();
+    startLiveStrategy();
+  } else {
+    // Start the focused chart
+    stSaveCurrentConfig();
+    stStartSingleSession(focused);
+  }
 }
 
 /* ── Start ── */
@@ -14003,7 +14025,52 @@ function stopLiveStrategy(){
    MULTI-CHART STRATEGY TESTER
    ═══════════════════════════════════════════════════════ */
 let lsTargetChart = 0;          // 0|1|2|3|'all'
-let _stMultiSessions = [];      // [{pair,label,candles,ws,balance,unrealized,position,trades,orbHigh,orbLow,orbState,timer,running}]
+let _stMultiSessions = [];      // [{pair,label,candles,ws,balance,unrealized,position,trades,orbHigh,orbLow,orbState,timer,running,config}]
+let _stFocusedChart = 0;        // which chart's settings are showing in the form
+
+// Per-chart configs — each chart has its own strategy settings
+const _stChartConfigs = [
+  {strategy:'orb',  contracts:1, tpMult:2.5, slMult:1.0, orbCandles:5},
+  {strategy:'ema',  contracts:1, tpMult:2.5, slMult:1.0, orbCandles:5},
+  {strategy:'rsi',  contracts:1, tpMult:2.5, slMult:1.0, orbCandles:5},
+  {strategy:'vwap', contracts:1, tpMult:2.5, slMult:1.0, orbCandles:5},
+];
+
+/* Save the current form values into the focused chart's config */
+function stSaveCurrentConfig(){
+  const cfg=_stChartConfigs[_stFocusedChart];
+  if(!cfg) return;
+  cfg.strategy   = document.getElementById('st-strat-select').value;
+  cfg.contracts  = parseFloat(document.getElementById('st-contracts').value)||1;
+  cfg.tpMult     = parseFloat(document.getElementById('st-tp-mult').value)||2.5;
+  cfg.slMult     = parseFloat(document.getElementById('st-sl-mult').value)||1.0;
+  cfg.orbCandles = parseInt(document.getElementById('st-orb-candles').value)||5;
+}
+
+/* Load a chart's config into the form */
+function stLoadConfig(idx){
+  const cfg=_stChartConfigs[idx]||_stChartConfigs[0];
+  document.getElementById('st-strat-select').value = cfg.strategy;
+  document.getElementById('st-contracts').value    = cfg.contracts;
+  document.getElementById('st-tp-mult').value      = cfg.tpMult;
+  document.getElementById('st-sl-mult').value      = cfg.slMult;
+  document.getElementById('st-orb-candles').value  = cfg.orbCandles;
+  onTesterStratChange();
+  try{ lsUpdateContractHint(); }catch(_){}
+}
+
+/* Switch which chart's settings are shown in the form */
+function stFocusChart(idx){
+  stSaveCurrentConfig();       // save current form → old focused chart
+  _stFocusedChart = idx;
+  stLoadConfig(idx);           // load new chart's config into form
+  stRefreshChartBtnStates();
+  // Update the "CONFIGURING:" label
+  const lbl=document.getElementById('st-config-lbl');
+  const layout=typeof currentLayout!=='undefined'?currentLayout:1;
+  const count=layout===4?4:layout===2?2:1;
+  if(lbl) lbl.textContent='CONFIGURING: CHART '+(idx+1);
+}
 
 /* Update which chart buttons are visible based on current layout */
 function stUpdateChartBtns(){
@@ -14024,19 +14091,18 @@ function stUpdateChartBtns(){
 /* Set chart target and highlight button */
 function stSetTarget(t){
   if(t === 'all'){
-    // ALL 4 — start sessions for every chart that isn't already running
-    stGetTargetPairs().forEach(target=>{ if(!_stMultiSessions.find(s=>s.idx===target.idx&&s.running)) stStartSingleSession(target.idx); });
+    // Start all charts that aren't already running (each with their own config)
+    stSaveCurrentConfig();
+    stGetTargetPairs().forEach(target=>{
+      if(!_stMultiSessions.find(s=>s.idx===target.idx&&s.running)) stStartSingleSession(target.idx);
+    });
     return;
   }
-  const idx = parseInt(t);
-  const existing = _stMultiSessions.find(s=>s.idx===idx);
-  if(existing && existing.running){
-    // Already running on this chart — stop just this one
-    stStopSingleSession(idx);
-  } else {
-    // Not running yet — add this chart to testing (keep others running)
-    stStartSingleSession(idx);
-  }
+  const idx=parseInt(t);
+  // Focus this chart — loads its settings into the form
+  stFocusChart(idx);
+  // If already running, just focusing it is enough (don't stop it)
+  // User hits START/STOP button to toggle the session
 }
 
 /* Get list of {pair, label} for selected targets */
@@ -14151,7 +14217,12 @@ function stOpenSessionWS(session){
 function stRunSessionCheck(session){
   if(!session.running||session.candles.length<20) return;
   const candles=session.candles;
-  const strat=lsMappedStrat();
+  // Use session's own config (set at start time) — NOT the DOM
+  const cfg=session.config||_stChartConfigs[session.idx]||_stChartConfigs[0];
+  const strat=cfg.strategy||'orb';
+  const tpMult=cfg.tpMult||2.5;
+  const slMult=cfg.slMult||1.0;
+  const orbN=cfg.orbCandles||5;
   const latest=candles[candles.length-1];
   const price=latest.close;
 
@@ -14160,10 +14231,10 @@ function stRunSessionCheck(session){
     const pos=session.position;
     let closed=false, pnl=0, exitReason='';
     if(pos.dir==='BUY'){
-      if(price>=pos.tp){closed=true;pnl=pos.riskAmt*(parseFloat(document.getElementById('st-tp-mult').value)||2.5);exitReason='TP hit';}
+      if(price>=pos.tp){closed=true;pnl=pos.riskAmt*tpMult;exitReason='TP hit';}
       else if(price<=pos.sl){closed=true;pnl=-pos.riskAmt;exitReason='SL hit';}
     } else {
-      if(price<=pos.tp){closed=true;pnl=pos.riskAmt*(parseFloat(document.getElementById('st-tp-mult').value)||2.5);exitReason='TP hit';}
+      if(price<=pos.tp){closed=true;pnl=pos.riskAmt*tpMult;exitReason='TP hit';}
       else if(price>=pos.sl){closed=true;pnl=-pos.riskAmt;exitReason='SL hit';}
     }
     if(closed){
@@ -14219,7 +14290,6 @@ function stRunSessionCheck(session){
     if(price<lower) signal='BUY';
     else if(price>upper) signal='SELL';
   } else if(strat==='orb'){
-    const orbN=parseInt(document.getElementById('st-orb-candles').value)||5;
     if(session.orbState==='WATCH'){
       const slice=candles.slice(-orbN);
       session.orbHigh=Math.max(...slice.map(c=>c.high));
@@ -14234,13 +14304,11 @@ function stRunSessionCheck(session){
 
   if(!signal) return;
 
-  // Build position
+  // Build position using session's own config
   const atr=candles.slice(-14).reduce((a,c,i,arr)=>{
     if(i===0) return 0;
     return a+Math.max(c.high-c.low,Math.abs(c.high-arr[i-1].close),Math.abs(c.low-arr[i-1].close));
   },0)/13;
-  const slMult=parseFloat(document.getElementById('st-sl-mult').value)||1;
-  const tpMult=parseFloat(document.getElementById('st-tp-mult').value)||2.5;
   const slDist=atr*slMult;
   const riskAmt=session.balance*0.01;
   const sl=signal==='BUY'?price-slDist:price+slDist;
@@ -14257,6 +14325,8 @@ function stRenderMultiGrid(){
   const mg=document.getElementById('st-multi-grid');
   if(!mg) return;
   mg.innerHTML='';
+  // Show grid whenever any session is running
+  mg.style.display=_stMultiSessions.some(s=>s.running)?'grid':'none';
   _stMultiSessions.forEach(session=>{
     const wins=session.trades.filter(t=>t.pnl>0).length;
     const wr=session.trades.length?Math.round(wins/session.trades.length*100):0;
@@ -14265,9 +14335,13 @@ function stRenderMultiGrid(){
     const hasPos=!!session.position;
     const card=document.createElement('div');
     card.className='st-msc'+(hasPos?' active-pos':'')+(totalPnl<-100?' in-loss':'');
+    const stratName=(_ST_STRAT_SHORT&&_ST_STRAT_SHORT[session.config?.strategy])||session.config?.strategy||'—';
     card.innerHTML=`
       <div class="st-msc-dot ${session.running?hasPos?'pos':'live':''}"></div>
-      <div class="st-msc-lbl">${session.label}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="st-msc-lbl">${session.label}</div>
+        <div style="font-family:'Orbitron',monospace;font-size:7px;color:var(--neon2);letter-spacing:.06em">${stratName}</div>
+      </div>
       <div class="st-msc-pair">${session.pair}</div>
       <div class="st-msc-bal" style="color:${pnlColor}">$${session.balance.toFixed(0)}</div>
       <div class="st-msc-meta">${session.trades.length} trades · ${wr}% WR · P&L <span style="color:${pnlColor}">${totalPnl>=0?'+':''}$${totalPnl.toFixed(0)}</span></div>
@@ -14289,11 +14363,15 @@ async function stStartSingleSession(idx){
   // Remove any stale entry for this idx
   _stMultiSessions=_stMultiSessions.filter(s=>s.idx!==idx);
 
+  // Snapshot this chart's config at session start
+  const cfg = {...(_stChartConfigs[idx]||_stChartConfigs[0])};
+
   const session={
     pair:target.pair, label:target.label, idx,
     candles:[], ws:null, _simTicker:null,
     balance:demoSize, unrealized:0, position:null, trades:[],
-    orbHigh:-Infinity, orbLow:Infinity, orbState:'WATCH', running:true, timer:null
+    orbHigh:-Infinity, orbLow:Infinity, orbState:'WATCH', running:true, timer:null,
+    config: cfg   // ← each session has its OWN strategy settings
   };
 
   if(idx===0){
@@ -14355,17 +14433,37 @@ function stStopSingleSession(idx){
 }
 
 /* Highlight chart buttons based on which sessions are currently running */
+const _ST_STRAT_SHORT = {orb:'ORB',ema:'EMA',rsi:'RSI',vwap:'VWAP',bb:'BB',custom:'CUST'};
+
 function stRefreshChartBtnStates(){
   ['0','1','2','3'].forEach(k=>{
     const b=document.getElementById('st-cb-'+k);
-    if(!b) return;
-    const running=_stMultiSessions.some(s=>s.idx===parseInt(k)&&s.running);
-    b.classList.toggle('active', running);
-    b.style.borderColor = running ? 'var(--neon)' : '';
+    if(!b||b.style.display==='none') return;
+    const idx=parseInt(k);
+    const running=_stMultiSessions.some(s=>s.idx===idx&&s.running);
+    const focused=_stFocusedChart===idx;
+    const cfg=_stChartConfigs[idx]||_stChartConfigs[0];
+    const stratShort=_ST_STRAT_SHORT[cfg.strategy]||cfg.strategy.toUpperCase().slice(0,4);
+    // Show: "CHART X  ·  STRATEGY" — green dot if running
+    b.innerHTML=(running?'<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--neon);margin-right:4px;vertical-align:middle;animation:pulse 1s infinite"></span>':'')
+      +'C'+(idx+1)+' · '+stratShort;
+    b.classList.toggle('active', running||focused);
+    b.style.borderColor = running ? 'var(--neon)' : focused ? 'rgba(0,170,255,0.6)' : '';
+    b.style.color = running ? 'var(--neon)' : focused ? 'rgba(255,255,255,0.9)' : '';
   });
-  // ALL button active if any session running
+  // ALL button active if every chart is running
   const allBtn=document.getElementById('st-cb-all');
   if(allBtn) allBtn.classList.toggle('active',_stMultiSessions.some(s=>s.running));
+  // Update "CONFIGURING:" label
+  const lbl=document.getElementById('st-config-lbl');
+  if(lbl) lbl.textContent='CONFIGURING: CHART '+(_stFocusedChart+1);
+  // Update START button text to reflect focused chart
+  const startBtn=document.getElementById('st-start-btn');
+  if(startBtn&&!lsRunning){
+    const focusedRunning=_stMultiSessions.some(s=>s.idx===_stFocusedChart&&s.running);
+    startBtn.textContent=focusedRunning?'■ STOP CHART '+(_stFocusedChart+1):'▶ START CHART '+(_stFocusedChart+1);
+    startBtn.classList.toggle('running', focusedRunning);
+  }
 }
 
 /* Start multi-chart strategy sessions */
