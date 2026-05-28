@@ -7998,13 +7998,19 @@ function activePage(){
   return p ? p.id : 'page-home';
 }
 function goPage(id){
+  // Auth gate — only home is public
+  if(id !== 'page-home' && typeof _authUser !== 'undefined' && !_authUser){
+    if(typeof authShowWall === 'function') authShowWall('login');
+    return;
+  }
   document.querySelectorAll('.page').forEach(p=>{p.classList.remove('active')});
   document.querySelectorAll('.nav-btn').forEach(b=>{b.classList.remove('active')});
-  document.getElementById(id).classList.add('active');
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.classList.add('active');
   const navId = 'nav-'+id.replace('page-','');
   const nb = document.getElementById(navId);
   if(nb) nb.classList.add('active');
-  // Refresh home stats with real data every visit
   if(id === 'page-home') try{ refreshHomeStats(); }catch(_){}
 }
 
@@ -16648,16 +16654,6 @@ function _onLoggedOut(){
 const _ADMIN_EMAIL = 'zamirbracey3@gmail.com';
 function _isOwner(){ return _authUser && _authUser.email === _ADMIN_EMAIL; }
 
-// ── Override goPage to enforce auth (only home is public) ──
-const _origGoPage = goPage;
-function goPage(id){
-  if(id !== 'page-home' && !_authUser){
-    authShowWall('login');
-    return;
-  }
-  _origGoPage(id);
-}
-
 // ── Hero button ──
 function heroPrimaryClick(){
   if(_authUser){ goPage('page-chart'); }
@@ -16831,7 +16827,7 @@ async function authStep3(){
     authGoStep('success');
     setTimeout(function(){
       authHideWall();
-      _origGoPage('page-chart');
+      goPage('page-chart');
     }, 2000);
   }catch(e){
     _inEmailSignupFlow = false;
@@ -17388,7 +17384,7 @@ async function authSaveGUsername(){
     document.getElementById('auth-step-success').classList.add('active');
     setTimeout(function(){
       authHideWall();
-      _origGoPage('page-chart');
+      goPage('page-chart');
     }, 2000);
   }catch(e){
     btn.disabled = false; btn.textContent = "LET'S GO →";
