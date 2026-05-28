@@ -14026,6 +14026,8 @@ function stUpdateChartBtns(){
 
 /* Set chart target and highlight button */
 function stSetTarget(t){
+  // If a session is running, stop it before switching charts
+  if(lsRunning){ stopLiveStrategy(); }
   lsTargetChart = t;
   ['0','1','2','3','all'].forEach(k=>{
     const b=document.getElementById('st-cb-'+k);
@@ -14034,6 +14036,12 @@ function stSetTarget(t){
   // Show/hide multi-grid
   const mg=document.getElementById('st-multi-grid');
   if(mg) mg.style.display = t==='all' ? 'grid' : 'none';
+  // Reset status box to ready state
+  const sb=document.getElementById('st-status-box');
+  if(sb){ sb.className='st-status-box'; sb.textContent='Ready — configure your strategy above and tap START.'; }
+  // Reset start button
+  const startBtn=document.getElementById('st-start-btn');
+  if(startBtn){ startBtn.textContent='▶ START LIVE SESSION'; startBtn.classList.remove('running'); }
 }
 
 /* Get list of {pair, label} for selected targets */
