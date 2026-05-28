@@ -7375,10 +7375,12 @@ import time; time.sleep(60)  # run for 60 seconds</pre></div>
     e.preventDefault();
   });
 
-  /* 4 ── DevTools detection via window dimension delta */
+  /* 4 ── DevTools detection via window dimension delta (desktop only) */
   var _dtOpen = false;
-  var _dtThreshold = 160;
+  var _dtThreshold = 200;
   function _detectDT(){
+    // Skip on mobile — browser UI (address bar, status bar) causes false positives
+    if(window.innerWidth <= 900) return;
     var wDiff = window.outerWidth  - window.innerWidth;
     var hDiff = window.outerHeight - window.innerHeight;
     var open  = wDiff > _dtThreshold || hDiff > _dtThreshold;
