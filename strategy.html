@@ -375,6 +375,179 @@ body::after{
 /* ── Animations ── */
 .fade-section{opacity:0;transform:translateY(18px);transition:opacity 0.5s var(--ease-out),transform 0.5s var(--ease-out)}
 .fade-section.visible{opacity:1;transform:translateY(0)}
+
+/* ── Clickable strategy cards ── */
+.strat-card{cursor:pointer}
+.strat-card:hover .strat-tap-hint{opacity:1}
+.strat-tap-hint{
+  position:absolute;bottom:10px;right:12px;
+  font-family:'Fira Code',monospace;font-size:8px;color:var(--neon);
+  opacity:0;transition:opacity 150ms;display:flex;align-items:center;gap:4px;
+}
+.strat-tap-hint svg{width:9px;height:9px}
+
+/* ── Modal overlay + panel ── */
+.modal-overlay{
+  position:fixed;inset:0;z-index:900;
+  background:rgba(3,8,18,0.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  opacity:0;pointer-events:none;transition:opacity 280ms;
+}
+.modal-overlay.open{opacity:1;pointer-events:all}
+
+.modal-panel{
+  position:fixed;right:0;top:0;bottom:0;z-index:901;
+  width:min(820px,97vw);
+  background:linear-gradient(170deg,#0b1830 0%,#060d1c 100%);
+  border-left:1px solid rgba(59,130,246,0.14);
+  box-shadow:-20px 0 60px rgba(0,0,0,0.6);
+  transform:translateX(102%);transition:transform 380ms var(--ease-out);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.modal-panel.open{transform:translateX(0)}
+
+/* Modal header */
+.modal-head{
+  padding:18px 24px 14px;
+  border-bottom:1px solid rgba(255,255,255,0.07);
+  flex-shrink:0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  background:rgba(6,13,28,0.6);
+}
+.modal-head-left{display:flex;flex-direction:column;gap:5px}
+.modal-regime-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:3px 10px;border-radius:6px;
+  font-family:'Fira Code',monospace;font-size:9px;font-weight:600;letter-spacing:.06em;
+  width:fit-content;
+}
+.modal-strat-title{font-family:'Orbitron',monospace;font-size:20px;font-weight:900;letter-spacing:.05em}
+.modal-strat-sub{font-family:'Fira Code',monospace;font-size:10px;color:var(--muted)}
+.modal-close-btn{
+  width:34px;height:34px;border-radius:8px;flex-shrink:0;
+  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);
+  color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all 150ms;
+}
+.modal-close-btn:hover{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:var(--red)}
+.modal-close-btn svg{width:16px;height:16px}
+
+/* Modal scrollable body */
+.modal-body{flex:1;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column}
+.modal-body::-webkit-scrollbar{width:3px}
+.modal-body::-webkit-scrollbar-thumb{background:rgba(59,130,246,0.2);border-radius:4px}
+
+/* Variant selector */
+.modal-variants{
+  padding:12px 24px;border-bottom:1px solid rgba(255,255,255,0.05);
+  display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex-shrink:0;
+}
+.variants-label{font-family:'Orbitron',monospace;font-size:8px;color:var(--muted);letter-spacing:.12em;margin-right:4px}
+.vpill{
+  padding:5px 14px;border-radius:8px;
+  border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);
+  font-family:'Fira Code',monospace;font-size:10px;color:var(--muted);
+  cursor:pointer;transition:all 150ms;
+}
+.vpill:hover{border-color:rgba(59,130,246,0.3);color:rgba(147,197,253,0.9)}
+.vpill.active{border-color:var(--neon);background:rgba(59,130,246,0.1);color:var(--neon)}
+
+/* Description + instruments */
+.modal-info{padding:14px 24px;border-bottom:1px solid rgba(255,255,255,0.05);flex-shrink:0}
+.modal-desc-text{font-size:12px;color:var(--muted);line-height:1.65;margin-bottom:10px}
+.modal-info-row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.modal-info-block{flex:1;min-width:200px}
+.modal-info-lbl{font-family:'Orbitron',monospace;font-size:8px;color:var(--muted);letter-spacing:.12em;margin-bottom:5px}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{
+  padding:3px 8px;border-radius:5px;
+  font-family:'Fira Code',monospace;font-size:9px;
+  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);color:var(--text);
+}
+.chip.green{background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.2);color:#4ade80}
+.chip.blue{background:rgba(59,130,246,0.08);border-color:rgba(59,130,246,0.2);color:var(--neon)}
+
+/* Platform tab bar */
+.modal-ptabs{
+  flex-shrink:0;padding:0 24px;
+  border-bottom:1px solid rgba(255,255,255,0.07);
+  background:rgba(6,13,28,0.4);
+}
+.ptab-group-label{
+  font-family:'Orbitron',monospace;font-size:8px;color:var(--muted);letter-spacing:.12em;
+  padding:8px 0 4px;
+}
+.ptab-bar{display:flex;gap:2px;overflow-x:auto;padding-bottom:0}
+.ptab-bar::-webkit-scrollbar{height:0}
+.ptab{
+  padding:7px 13px;border-radius:6px 6px 0 0;
+  font-family:'Fira Code',monospace;font-size:10px;color:var(--muted);
+  cursor:pointer;transition:all 140ms;border:1px solid transparent;border-bottom:none;
+  white-space:nowrap;flex-shrink:0;
+}
+.ptab:hover{color:rgba(180,210,245,0.85);background:rgba(255,255,255,0.04)}
+.ptab.active{background:rgba(59,130,246,0.09);border-color:rgba(59,130,246,0.22);color:var(--neon)}
+.ptab.manual{color:rgba(245,158,11,0.7)}
+.ptab.manual:hover{color:var(--gold)}
+.ptab.manual.active{background:rgba(245,158,11,0.07);border-color:rgba(245,158,11,0.22);color:var(--gold)}
+
+/* Platform content area */
+.modal-pcontent{padding:16px 24px 28px;flex:1}
+.ptype-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:3px 10px;border-radius:5px;margin-bottom:12px;
+  font-family:'Orbitron',monospace;font-size:8px;letter-spacing:.1em;
+}
+.ptype-badge.code{background:rgba(129,140,248,0.1);border:1px solid rgba(129,140,248,0.2);color:var(--purple)}
+.ptype-badge.manual{background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);color:var(--gold)}
+.ptype-badge svg{width:10px;height:10px}
+
+/* Code wrapper with copy button */
+.code-wrap{position:relative;margin-bottom:10px}
+.copy-btn{
+  position:absolute;top:10px;right:10px;z-index:2;
+  display:flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:6px;
+  border:1px solid rgba(255,255,255,0.12);background:rgba(20,30,50,0.95);
+  color:var(--muted);font-family:'Fira Code',monospace;font-size:9px;
+  cursor:pointer;transition:all 140ms;
+}
+.copy-btn:hover{border-color:var(--neon);color:var(--neon)}
+.copy-btn.copied{border-color:#22c55e;color:#22c55e;background:rgba(34,197,94,0.08)}
+.copy-btn svg{width:11px;height:11px}
+.code-blk{
+  background:rgba(4,8,20,0.98);border:1px solid rgba(129,140,248,0.14);border-radius:10px;
+  padding:14px;font-family:'Fira Code',monospace;font-size:11px;line-height:1.65;
+  overflow-x:auto;white-space:pre;max-height:380px;overflow-y:auto;color:#c9d5f0;
+}
+.code-blk::-webkit-scrollbar{width:3px;height:3px}
+.code-blk::-webkit-scrollbar-thumb{background:rgba(129,140,248,0.2);border-radius:4px}
+
+/* Manual steps */
+.manual-steps{display:flex;flex-direction:column;gap:8px}
+.mstep{
+  display:flex;gap:12px;padding:11px 13px;border-radius:10px;
+  background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);
+}
+.mstep-num{
+  width:22px;height:22px;border-radius:6px;flex-shrink:0;
+  background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);
+  font-family:'Orbitron',monospace;font-size:9px;font-weight:700;color:var(--gold);
+  display:flex;align-items:center;justify-content:center;margin-top:1px;
+}
+.mstep-body{flex:1}
+.mstep-title{font-size:11px;font-weight:600;color:var(--text);margin-bottom:3px}
+.mstep-desc{font-size:11px;color:var(--muted);line-height:1.55}
+.mstep-code{
+  margin-top:6px;padding:5px 9px;border-radius:5px;
+  background:rgba(4,8,20,0.8);border:1px solid rgba(255,255,255,0.07);
+  font-family:'Fira Code',monospace;font-size:10px;color:rgba(134,239,172,0.85);
+  display:inline-block;
+}
+.modal-platform-note{
+  margin-top:12px;padding:10px 14px;border-radius:8px;
+  background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.14);
+  font-size:10px;color:var(--muted);line-height:1.6;
+}
+.modal-platform-note strong{color:rgba(147,197,253,0.9)}
 </style>
 </head>
 <body>
@@ -579,7 +752,7 @@ body::after{
   <section class="fade-section">
     <div class="sec-label">◈ STRATEGY LIBRARY · 6 REGIME-MAPPED STRATEGIES</div>
     <div class="strat-grid">
-      <div class="strat-card">
+      <div class="strat-card" onclick="openModal('trend-follower')">
         <div class="strat-accent" style="background:linear-gradient(90deg,var(--neon),var(--neon2))"></div>
         <div class="strat-badge" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);color:var(--neon)">
           <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>TRENDING
@@ -591,8 +764,9 @@ body::after{
           <div class="strat-metric"><div class="strat-metric-val" style="color:var(--gold)">1.8R</div><div class="strat-metric-lbl">AVG R</div></div>
           <div class="strat-metric"><div class="strat-metric-val" style="color:#22c55e">2.3</div><div class="strat-metric-lbl">PROFIT F.</div></div>
         </div>
+        <div class="strat-tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 8 16 12 12 16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>TAP FOR STRATEGIES</div>
       </div>
-      <div class="strat-card">
+      <div class="strat-card" onclick="openModal('mean-reversion')">
         <div class="strat-accent" style="background:linear-gradient(90deg,var(--gold),#f97316)"></div>
         <div class="strat-badge" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);color:var(--gold)">
           <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>SIDEWAYS
@@ -604,8 +778,9 @@ body::after{
           <div class="strat-metric"><div class="strat-metric-val" style="color:var(--gold)">0.9R</div><div class="strat-metric-lbl">AVG R</div></div>
           <div class="strat-metric"><div class="strat-metric-val" style="color:#22c55e">1.9</div><div class="strat-metric-lbl">PROFIT F.</div></div>
         </div>
+        <div class="strat-tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 8 16 12 12 16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>TAP FOR STRATEGIES</div>
       </div>
-      <div class="strat-card">
+      <div class="strat-card" onclick="openModal('vol-expansion')">
         <div class="strat-accent" style="background:linear-gradient(90deg,var(--magenta),var(--purple))"></div>
         <div class="strat-badge" style="background:rgba(192,132,252,0.1);border:1px solid rgba(192,132,252,0.25);color:var(--magenta)">
           <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>BREAKOUT
@@ -617,8 +792,9 @@ body::after{
           <div class="strat-metric"><div class="strat-metric-val" style="color:var(--gold)">3.1R</div><div class="strat-metric-lbl">AVG R</div></div>
           <div class="strat-metric"><div class="strat-metric-val" style="color:#22c55e">2.6</div><div class="strat-metric-lbl">PROFIT F.</div></div>
         </div>
+        <div class="strat-tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 8 16 12 12 16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>TAP FOR STRATEGIES</div>
       </div>
-      <div class="strat-card">
+      <div class="strat-card" onclick="openModal('defensive-mode')">
         <div class="strat-accent" style="background:linear-gradient(90deg,var(--red),#f97316)"></div>
         <div class="strat-badge" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:var(--red)">
           <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>HIGH_VOL
@@ -630,8 +806,9 @@ body::after{
           <div class="strat-metric"><div class="strat-metric-val" style="color:var(--gold)">2× ATR</div><div class="strat-metric-lbl">STOPS</div></div>
           <div class="strat-metric"><div class="strat-metric-val" style="color:var(--muted)">CAUTION</div><div class="strat-metric-lbl">POSTURE</div></div>
         </div>
+        <div class="strat-tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 8 16 12 12 16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>TAP FOR STRATEGIES</div>
       </div>
-      <div class="strat-card">
+      <div class="strat-card" onclick="openModal('range-scalper')">
         <div class="strat-accent" style="background:linear-gradient(90deg,var(--neon2),#22c55e)"></div>
         <div class="strat-badge" style="background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.25);color:var(--neon2)">
           <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>LOW_VOL
@@ -643,8 +820,9 @@ body::after{
           <div class="strat-metric"><div class="strat-metric-val" style="color:var(--gold)">0.6R</div><div class="strat-metric-lbl">AVG R</div></div>
           <div class="strat-metric"><div class="strat-metric-val" style="color:#22c55e">1.7</div><div class="strat-metric-lbl">PROFIT F.</div></div>
         </div>
+        <div class="strat-tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 8 16 12 12 16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>TAP FOR STRATEGIES</div>
       </div>
-      <div class="strat-card">
+      <div class="strat-card" onclick="openModal('short-trend')">
         <div class="strat-accent" style="background:linear-gradient(90deg,var(--red),var(--magenta))"></div>
         <div class="strat-badge" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.22);color:var(--red)">
           <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/></svg>TRENDING_DOWN
@@ -656,6 +834,7 @@ body::after{
           <div class="strat-metric"><div class="strat-metric-val" style="color:var(--gold)">1.7R</div><div class="strat-metric-lbl">AVG R</div></div>
           <div class="strat-metric"><div class="strat-metric-val" style="color:#22c55e">2.1</div><div class="strat-metric-lbl">PROFIT F.</div></div>
         </div>
+        <div class="strat-tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 8 16 12 12 16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>TAP FOR STRATEGIES</div>
       </div>
     </div>
   </section>
@@ -841,6 +1020,42 @@ body::after{
 </div><!-- /section-gap -->
 </main>
 
+<!-- ── Strategy Modal ── -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal()"></div>
+<div class="modal-panel" id="modalPanel">
+  <div class="modal-head">
+    <div class="modal-head-left">
+      <div class="modal-regime-badge" id="modalRegimeBadge"></div>
+      <div class="modal-strat-title" id="modalTitle"></div>
+      <div class="modal-strat-sub" id="modalSub"></div>
+    </div>
+    <button class="modal-close-btn" onclick="closeModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="modal-body">
+    <div class="modal-variants" id="modalVariants"></div>
+    <div class="modal-info">
+      <div class="modal-desc-text" id="modalDesc"></div>
+      <div class="modal-info-row">
+        <div class="modal-info-block">
+          <div class="modal-info-lbl">BEST INSTRUMENTS</div>
+          <div class="chips" id="modalInstruments"></div>
+        </div>
+        <div class="modal-info-block">
+          <div class="modal-info-lbl">BEST SESSION</div>
+          <div class="chips" id="modalSession"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ptabs">
+      <div class="ptab-group-label">◈ CODE PLATFORMS — COPY · PASTE · RUN</div>
+      <div class="ptab-bar" id="modalPtabBar"></div>
+    </div>
+    <div class="modal-pcontent" id="modalPcontent"></div>
+  </div>
+</div>
+
 <!-- ── Footer ── -->
 <footer class="footer">
   <div class="footer-brand">TRADING<span>FLOW</span></div>
@@ -873,6 +1088,1274 @@ setTimeout(() => {
     setTimeout(() => { el.style.width = w; }, 200);
   });
 }, 300);
+
+// ═══════════════════════════════════════════════════
+// STRATEGY MODAL DATA
+// ═══════════════════════════════════════════════════
+const PLATFORMS = [
+  {id:'tv',    label:'TradingView', type:'code'},
+  {id:'mt5',   label:'MetaTrader 5', type:'code'},
+  {id:'ninja', label:'NinjaTrader', type:'code'},
+  {id:'ts',    label:'TradeStation', type:'code'},
+  {id:'okx',   label:'OKX', type:'manual'},
+  {id:'tradovate', label:'Tradovate', type:'manual'},
+  {id:'amp',   label:'AMP Futures', type:'manual'},
+  {id:'oanda', label:'OANDA', type:'manual'},
+  {id:'forex', label:'Forex.com', type:'manual'},
+  {id:'wb',    label:'Webull', type:'manual'},
+  {id:'moomoo',label:'Moomoo', type:'manual'},
+  {id:'rh',    label:'Robinhood', type:'manual'},
+];
+
+const STRATS = {
+'trend-follower': {
+  name:'TREND FOLLOWER', regime:'TRENDING_UP',
+  regimeColor:'#3b82f6', regimeBg:'rgba(59,130,246,0.12)', regimeBorder:'rgba(59,130,246,0.3)',
+  variants:[
+    { name:'EMA Pullback', tagline:'EMA 21/50 + ADX filter · 15m / 1h',
+      desc:'Enter long on pullbacks to EMA21 while EMA21 is above EMA50 and ADX > 25. RSI must be between 40–65 (momentum confirmed, not overbought). Stop placed 1.5× ATR below entry. Target 1.8× ATR above. Best used on 15m or 1h charts during trending sessions.',
+      instruments:['EURUSD','GBPUSD','XAUUSD','NAS100','ES Futures'],
+      session:'London/NY Overlap (13:00–17:00 UTC)' },
+    { name:'Supertrend Follow', tagline:'Supertrend(3,10) + ATR trail · 1h / 4h',
+      desc:'Enter when price crosses above Supertrend line and ATR > 20-period ATR average (confirming expansion). Hold until Supertrend flips. Works well on 1h/4h for medium-term rides. Avoid during first 30 min of NY open.',
+      instruments:['USDJPY','GBPJPY','XAUUSD','BTC/USD'],
+      session:'Any trending session — avoid Asian chop' },
+    { name:'MACD Continuation', tagline:'MACD histogram flip + EMA stack · 4h / 1d',
+      desc:'Enter on MACD histogram turning positive (12,26,9) while all EMAs (21/50/200) are stacked bullishly. Wait for a candle close above EMA21 on pullback. Wider stop at 2× ATR. Target 2.5× ATR. Ideal for swing trades held 2–5 days.',
+      instruments:['EURUSD','NAS100','SPY','BTC/USD'],
+      session:'Daily closes — any session for swing' },
+  ],
+  code:{
+    tv:`//@version=5
+strategy("TradingFlow · Trend Follower", overlay=true,
+     default_qty_type=strategy.percent_of_equity, default_qty_value=1,
+     commission_type=strategy.commission.percent, commission_value=0.05)
+// ── Inputs ──────────────────────────────────────────
+ema_fast   = input.int(21,   "Fast EMA",        group="EMAs")
+ema_slow   = input.int(50,   "Slow EMA",        group="EMAs")
+adx_len    = input.int(14,   "ADX Length",      group="Regime")
+adx_min    = input.float(25, "ADX Min",         group="Regime")
+rsi_lo     = input.float(40, "RSI Min (entry)", group="Entry")
+rsi_hi     = input.float(65, "RSI Max",         group="Entry")
+atr_stop   = input.float(1.5,"ATR Stop Mult",   group="Risk")
+rr         = input.float(1.8,"R:R Ratio",       group="Risk")
+// ── Calculations ────────────────────────────────────
+ema21 = ta.ema(close, ema_fast)
+ema50 = ta.ema(close, ema_slow)
+[dp, dm, adx] = ta.dmi(adx_len, adx_len)
+rsi   = ta.rsi(close, 14)
+atr   = ta.atr(14)
+// ── Regime & Entry ──────────────────────────────────
+trending = adx > adx_min and dp > dm and ema21 > ema50
+pullback = low <= ema21 * 1.002 and close > ema21
+entry    = trending and pullback and rsi > rsi_lo and rsi < rsi_hi
+// ── Execute ─────────────────────────────────────────
+if entry and strategy.position_size == 0
+    sl = close - atr * atr_stop
+    tp = close + atr * atr_stop * rr
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Exit", "Long", stop=sl, limit=tp)
+// ── Visuals ─────────────────────────────────────────
+plot(ema21, "EMA 21", color.blue, 2)
+plot(ema50, "EMA 50", color.orange, 1)
+bgcolor(trending ? color.new(color.blue, 94) : na)
+plotshape(entry and strategy.position_size==0, "Buy", shape.triangleup, location.belowbar, color.lime, size=size.small)`,
+
+    mt5:`// TradingFlow - Trend Follower EA (MQL5)
+// Paste into MetaEditor → Compile → Attach to chart
+#property copyright "TradingFlow"
+#property version   "1.00"
+#include <Trade\\Trade.mqh>
+input int    EMA_Fast   = 21;
+input int    EMA_Slow   = 50;
+input int    ADX_Period = 14;
+input double ADX_Min    = 25.0;
+input double ATR_Stop   = 1.5;
+input double RR_Ratio   = 1.8;
+input double Risk_Pct   = 1.0;   // % of account per trade
+CTrade trade;
+int h_ema21, h_ema50, h_adx, h_atr;
+int OnInit() {
+   h_ema21 = iMA(_Symbol,PERIOD_H1,EMA_Fast,0,MODE_EMA,PRICE_CLOSE);
+   h_ema50 = iMA(_Symbol,PERIOD_H1,EMA_Slow,0,MODE_EMA,PRICE_CLOSE);
+   h_adx   = iADX(_Symbol,PERIOD_H1,ADX_Period);
+   h_atr   = iATR(_Symbol,PERIOD_H1,14);
+   return INIT_SUCCEEDED;
+}
+void OnTick() {
+   if(PositionsTotal() > 0) return;
+   double ema21[2],ema50[2],adx[2],diplus[2],atr[2];
+   CopyBuffer(h_ema21,0,0,2,ema21); CopyBuffer(h_ema50,0,0,2,ema50);
+   CopyBuffer(h_adx,0,0,2,adx);   CopyBuffer(h_adx,1,0,2,diplus);
+   CopyBuffer(h_atr,0,0,2,atr);
+   ArraySetAsSeries(ema21,true); ArraySetAsSeries(ema50,true);
+   ArraySetAsSeries(adx,true);  ArraySetAsSeries(diplus,true);
+   ArraySetAsSeries(atr,true);
+   bool trending = adx[0]>ADX_Min && diplus[0]>0 && ema21[0]>ema50[0];
+   double low1   = iLow(_Symbol,PERIOD_H1,1);
+   bool pullback = low1 <= ema21[0]*1.002;
+   if(trending && pullback) {
+      double price = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
+      double sl = price - atr[0]*ATR_Stop;
+      double tp = price + atr[0]*ATR_Stop*RR_Ratio;
+      double lots = CalcLots(price-sl);
+      trade.Buy(lots,_Symbol,price,sl,tp,"TF-Long");
+   }
+}
+double CalcLots(double risk_pts) {
+   double bal  = AccountInfoDouble(ACCOUNT_BALANCE);
+   double tick = SymbolInfoDouble(_Symbol,SYMBOL_TRADE_TICK_VALUE);
+   double tsz  = SymbolInfoDouble(_Symbol,SYMBOL_TRADE_TICK_SIZE);
+   return NormalizeDouble((bal*Risk_Pct/100)/(risk_pts/tsz*tick),2);
+}`,
+
+    ninja:`// TradingFlow - Trend Follower (NinjaScript)
+// NinjaTrader 8 → New → Strategy → paste & compile
+using NinjaTrader.Cbi;
+using NinjaTrader.NinjaScript.Indicators;
+namespace NinjaTrader.NinjaScript.Strategies {
+  public class TF_TrendFollower : Strategy {
+    private EMA ema21, ema50;
+    private ADX adxInd;
+    private ATR atrInd;
+    [NinjaScriptProperty] public double ADXMin    {get;set;} = 25;
+    [NinjaScriptProperty] public double ATRStop   {get;set;} = 1.5;
+    [NinjaScriptProperty] public double RRRatio   {get;set;} = 1.8;
+    [NinjaScriptProperty] public double RiskPct   {get;set;} = 1.0;
+    protected override void OnStateChange() {
+      if(State==State.SetDefaults){
+        Name="TF Trend Follower"; Calculate=Calculate.OnBarClose;
+        EntriesPerDirection=1; EntryHandling=EntryHandling.AllEntries;
+      }
+      if(State==State.DataLoaded){
+        ema21  = EMA(21); ema50 = EMA(50);
+        adxInd = ADX(14); atrInd = ATR(14);
+        AddChartIndicator(ema21); AddChartIndicator(ema50);
+      }
+    }
+    protected override void OnBarUpdate() {
+      if(CurrentBar < 50 || Position.MarketPosition != MarketPosition.Flat) return;
+      bool trending = adxInd[0]>ADXMin && ema21[0]>ema50[0];
+      bool pullback = Low[1] <= ema21[0]*1.002 && Close[0] > ema21[0];
+      if(trending && pullback) {
+        double sl = Close[0] - atrInd[0]*ATRStop;
+        double tp = Close[0] + atrInd[0]*ATRStop*RRRatio;
+        EnterLong(1, "TF-Long");
+        SetStopLoss("TF-Long", CalculationMode.Price, sl, false);
+        SetProfitTarget("TF-Long", CalculationMode.Price, tp);
+      }
+    }
+  }
+}`,
+
+    ts:`{ TradingFlow - Trend Follower (TradeStation EasyLanguage) }
+{ Insert → New Strategy → paste & verify }
+Inputs:
+   EMAFast(21), EMASlow(50), ADXLen(14), ADXMin(25),
+   ATRStop(1.5), RRRatio(1.8);
+Variables:
+   myEMA21(0), myEMA50(0), myADX(0), myATR(0),
+   isTrending(False), isPullback(False), SL(0), TP(0);
+myEMA21    = XAverage(Close, EMAFast);
+myEMA50    = XAverage(Close, EMASlow);
+myADX      = ADX(ADXLen);
+myATR      = AvgTrueRange(14);
+isTrending = myADX > ADXMin AND myEMA21 > myEMA50;
+isPullback = Low[1] <= myEMA21 * 1.002 AND Close > myEMA21;
+If isTrending AND isPullback AND MarketPosition = 0 Then Begin
+   SL = Close - myATR * ATRStop;
+   TP = Close + myATR * ATRStop * RRRatio;
+   Buy("TF-Long") Next Bar at Market;
+   SetStopLoss("TF-Long", Dollar, (Close-SL)*BigPointValue, False);
+   SetProfitTarget("TF-Long", Dollar, (TP-Close)*BigPointValue, False);
+End;`,
+
+    okx:null, tradovate:null, amp:null, oanda:null, forex:null, wb:null, moomoo:null, rh:null,
+  }
+},
+
+'mean-reversion': {
+  name:'MEAN REVERSION', regime:'SIDEWAYS',
+  regimeColor:'#f59e0b', regimeBg:'rgba(245,158,11,0.12)', regimeBorder:'rgba(245,158,11,0.3)',
+  variants:[
+    { name:'RSI + BB Fade', tagline:'RSI extremes at BB band touch · 5m / 15m',
+      desc:'Fade price when RSI is below 30 (oversold) or above 70 (overbought) AND price touches the outer Bollinger Band. ADX must be below 20. Stop just beyond the band. Target is the 20-period moving average. Best in low-volatility, range-bound sessions.',
+      instruments:['EURUSD','AUDUSD','USDCHF','Gold (low vol)'],
+      session:'Asian session (00:00–08:00 UTC) or pre-NY chop' },
+    { name:'Stochastic S/R Fade', tagline:'Stoch oversold/overbought at key levels · 15m',
+      desc:'Identify key support/resistance levels. Enter when Stochastic (14,3,3) is below 20 at support or above 80 at resistance, and a rejection candle forms (pin bar or engulfing). Stop 5 pips beyond S/R. Target the opposite S/R level.',
+      instruments:['EURUSD','GBPUSD','USDJPY','NAS100'],
+      session:'London open fade (07:00–09:00 UTC)' },
+    { name:'VWAP Reversion', tagline:'Price deviation from VWAP · 1m / 5m intraday',
+      desc:'On intraday charts, enter when price is more than 1.5 ATR away from VWAP and a reversal candle forms. Use first VWAP touch as target. Only trade during active market hours — VWAP is meaningless in low-volume pre-market.',
+      instruments:['SPY','QQQ','ES Futures','NQ Futures'],
+      session:'Regular market hours — 09:30–16:00 ET' },
+  ],
+  code:{
+    tv:`//@version=5
+strategy("TradingFlow · Mean Reversion", overlay=true,
+     default_qty_type=strategy.percent_of_equity, default_qty_value=1,
+     commission_type=strategy.commission.percent, commission_value=0.05)
+// ── Inputs ──────────────────────────────────────────
+bb_len   = input.int(20,   "BB Length",       group="Bollinger")
+bb_mult  = input.float(2.0,"BB StdDev",       group="Bollinger")
+rsi_len  = input.int(14,   "RSI Length",      group="Entry")
+adx_max  = input.float(20, "ADX Max (range)", group="Regime")
+atr_stop = input.float(1.2,"ATR Stop Mult",   group="Risk")
+// ── Calculations ────────────────────────────────────
+[bb_mid, bb_up, bb_lo] = ta.bb(close, bb_len, bb_mult)
+rsi  = ta.rsi(close, rsi_len)
+[dp, dm, adx] = ta.dmi(14, 14)
+atr  = ta.atr(14)
+// ── Regime: SIDEWAYS ────────────────────────────────
+sideways = adx < adx_max
+// ── Entries ─────────────────────────────────────────
+buy_sig  = sideways and close <= bb_lo and rsi < 32
+sell_sig = sideways and close >= bb_up and rsi > 68
+// ── Execute ─────────────────────────────────────────
+if buy_sig and strategy.position_size == 0
+    strategy.entry("MR Long", strategy.long)
+    strategy.exit("MR Long X", "MR Long", stop=close-atr*atr_stop, limit=bb_mid)
+if sell_sig and strategy.position_size == 0
+    strategy.entry("MR Short", strategy.short)
+    strategy.exit("MR Short X","MR Short", stop=close+atr*atr_stop, limit=bb_mid)
+// ── Visuals ─────────────────────────────────────────
+plot(bb_mid, "BB Mid",  color.gray, 1)
+plot(bb_up,  "BB Upper",color.red,  1)
+plot(bb_lo,  "BB Lower",color.green,1)
+bgcolor(sideways ? color.new(color.yellow,96) : na)`,
+
+    mt5:`// TradingFlow - Mean Reversion EA (MQL5)
+#property copyright "TradingFlow"
+#property version   "1.00"
+#include <Trade\\Trade.mqh>
+input int    BB_Period = 20;
+input double BB_Dev    = 2.0;
+input int    RSI_Period= 14;
+input double ADX_Max   = 20.0;
+input double ATR_Stop  = 1.2;
+input double Risk_Pct  = 1.0;
+CTrade trade;
+int h_bb, h_rsi, h_adx, h_atr;
+int OnInit() {
+   h_bb  = iBands(_Symbol,PERIOD_M15,BB_Period,0,BB_Dev,PRICE_CLOSE);
+   h_rsi = iRSI(_Symbol,PERIOD_M15,RSI_Period,PRICE_CLOSE);
+   h_adx = iADX(_Symbol,PERIOD_M15,14);
+   h_atr = iATR(_Symbol,PERIOD_M15,14);
+   return INIT_SUCCEEDED;
+}
+void OnTick() {
+   if(PositionsTotal() > 0) return;
+   double bbU[2],bbL[2],rsi[2],adx[2],atr[2];
+   CopyBuffer(h_bb,1,0,2,bbU); CopyBuffer(h_bb,2,0,2,bbL);
+   CopyBuffer(h_rsi,0,0,2,rsi); CopyBuffer(h_adx,0,0,2,adx);
+   CopyBuffer(h_atr,0,0,2,atr);
+   ArraySetAsSeries(bbU,true); ArraySetAsSeries(bbL,true);
+   ArraySetAsSeries(rsi,true); ArraySetAsSeries(adx,true); ArraySetAsSeries(atr,true);
+   if(adx[0] >= ADX_Max) return; // only range markets
+   double ask = SymbolInfoDouble(_Symbol,SYMBOL_ASK);
+   double bid = SymbolInfoDouble(_Symbol,SYMBOL_BID);
+   double bbMid[2]; CopyBuffer(h_bb,0,0,2,bbMid); ArraySetAsSeries(bbMid,true);
+   if(ask <= bbL[0] && rsi[0] < 32) {
+      double sl=ask-atr[0]*ATR_Stop, tp=bbMid[0];
+      trade.Buy(CalcLots(ask-sl),_Symbol,ask,sl,tp,"MR-Long");
+   }
+   if(bid >= bbU[0] && rsi[0] > 68) {
+      double sl=bid+atr[0]*ATR_Stop, tp=bbMid[0];
+      trade.Sell(CalcLots(sl-bid),_Symbol,bid,sl,tp,"MR-Short");
+   }
+}
+double CalcLots(double rp) {
+   double b=AccountInfoDouble(ACCOUNT_BALANCE);
+   double tv=SymbolInfoDouble(_Symbol,SYMBOL_TRADE_TICK_VALUE);
+   double ts=SymbolInfoDouble(_Symbol,SYMBOL_TRADE_TICK_SIZE);
+   return NormalizeDouble((b*Risk_Pct/100)/(rp/ts*tv),2);
+}`,
+
+    ninja:`// TradingFlow - Mean Reversion (NinjaScript)
+using NinjaTrader.NinjaScript.Indicators;
+namespace NinjaTrader.NinjaScript.Strategies {
+  public class TF_MeanReversion : Strategy {
+    private Bollinger bbInd;
+    private RSI rsiInd;
+    private ADX adxInd;
+    private ATR atrInd;
+    [NinjaScriptProperty] public double ADXMax  {get;set;} = 20;
+    [NinjaScriptProperty] public double ATRStop {get;set;} = 1.2;
+    protected override void OnStateChange() {
+      if(State==State.SetDefaults){
+        Name="TF Mean Reversion"; Calculate=Calculate.OnBarClose;
+        EntriesPerDirection=1;
+      }
+      if(State==State.DataLoaded){
+        bbInd  = Bollinger(2.0, 20);
+        rsiInd = RSI(14,3);
+        adxInd = ADX(14);
+        atrInd = ATR(14);
+      }
+    }
+    protected override void OnBarUpdate() {
+      if(CurrentBar < 30 || Position.MarketPosition != MarketPosition.Flat) return;
+      if(adxInd[0] >= ADXMax) return;
+      if(Close[0] <= bbInd.Lower[0] && rsiInd[0] < 32) {
+        EnterLong(1,"MR-Long");
+        SetStopLoss("MR-Long",CalculationMode.Price,Close[0]-atrInd[0]*ATRStop,false);
+        SetProfitTarget("MR-Long",CalculationMode.Price,bbInd.Middle[0]);
+      }
+      if(Close[0] >= bbInd.Upper[0] && rsiInd[0] > 68) {
+        EnterShort(1,"MR-Short");
+        SetStopLoss("MR-Short",CalculationMode.Price,Close[0]+atrInd[0]*ATRStop,false);
+        SetProfitTarget("MR-Short",CalculationMode.Price,bbInd.Middle[0]);
+      }
+    }
+  }
+}`,
+
+    ts:`{ TradingFlow - Mean Reversion (TradeStation EasyLanguage) }
+Inputs:
+   BBLen(20), BBDev(2.0), RSILen(14), ADXMax(20), ATRStop(1.2);
+Variables:
+   BBUpper(0), BBLower(0), BBMid(0), myRSI(0), myADX(0), myATR(0);
+BBUpper = BollingerBand(Close, BBLen, BBDev);
+BBLower = BollingerBand(Close, BBLen, -BBDev);
+BBMid   = Average(Close, BBLen);
+myRSI   = RSI(Close, RSILen);
+myADX   = ADX(14);
+myATR   = AvgTrueRange(14);
+If myADX < ADXMax Then Begin
+   If Close <= BBLower AND myRSI < 32 AND MarketPosition = 0 Then Begin
+      Buy("MR-Long") Next Bar at Market;
+      SetStopLoss("MR-Long", Dollar, myATR*ATRStop*BigPointValue, False);
+      SetProfitTarget("MR-Long", Dollar, (BBMid-Close)*BigPointValue, False);
+   End;
+   If Close >= BBUpper AND myRSI > 68 AND MarketPosition = 0 Then Begin
+      Sell Short("MR-Short") Next Bar at Market;
+      SetStopLoss("MR-Short", Dollar, myATR*ATRStop*BigPointValue, False);
+      SetProfitTarget("MR-Short", Dollar, (Close-BBMid)*BigPointValue, False);
+   End;
+End;`,
+    okx:null,tradovate:null,amp:null,oanda:null,forex:null,wb:null,moomoo:null,rh:null,
+  }
+},
+
+'vol-expansion': {
+  name:'VOL EXPANSION', regime:'BREAKOUT',
+  regimeColor:'#c084fc', regimeBg:'rgba(192,132,252,0.12)', regimeBorder:'rgba(192,132,252,0.3)',
+  variants:[
+    { name:'BB Squeeze Breakout', tagline:'Bollinger squeeze release + vol spike · 15m / 1h',
+      desc:'Wait for Bollinger Bands to contract (squeeze: BB width < 20-period BB width SMA). On the candle that breaks above the upper band with volume ≥ 2× 20-bar average, enter long (or short for downside break). Exit if price re-enters the range within 3 bars (failed breakout). Stop 1.5× ATR below breakout candle low.',
+      instruments:['GBPJPY','BTCUSD','ETHUSD','NAS100','CL (Crude)'],
+      session:'News events — NY open (13:30 UTC) · FOMC · NFP' },
+    { name:'Donchian Breakout', tagline:'20-period high/low channel break · 1h / 4h',
+      desc:'Enter when price closes beyond the 20-period Donchian channel high (long) or low (short). Require ATR to be above its 20-period average (expanding vol). Stop at the opposite channel boundary. Trail stop using 10-period Donchian. Works best on trending FX and commodities.',
+      instruments:['GBPJPY','XAUUSD','USOIL','BTC/USD'],
+      session:'London open breakout (07:00–09:00 UTC)' },
+    { name:'ATR Channel Explosion', tagline:'Keltner Channel break + MACD confirm · 1h',
+      desc:'Enter when price breaks outside a 2× ATR Keltner Channel AND MACD histogram is accelerating in the breakout direction. This double filter reduces false breakouts significantly. Stop inside the channel. Target 3× ATR from entry.',
+      instruments:['ES Futures','NQ Futures','GBPUSD','Silver'],
+      session:'US market open — high liquidity required' },
+  ],
+  code:{
+    tv:`//@version=5
+strategy("TradingFlow · Vol Expansion Breakout", overlay=true,
+     default_qty_type=strategy.percent_of_equity, default_qty_value=1,
+     commission_type=strategy.commission.percent, commission_value=0.05)
+// ── Inputs ──────────────────────────────────────────
+bb_len    = input.int(20,   "BB Length",       group="Squeeze")
+bb_dev    = input.float(2.0,"BB StdDev",       group="Squeeze")
+vol_mult  = input.float(1.5,"Vol Multiplier",  group="Entry")
+atr_stop  = input.float(1.5,"ATR Stop Mult",   group="Risk")
+rr        = input.float(3.0,"R:R Target",      group="Risk")
+fb_bars   = input.int(3,    "Failed BO bars",  group="Exit")
+// ── Calculations ────────────────────────────────────
+[bb_mid, bb_up, bb_lo] = ta.bb(close, bb_len, bb_dev)
+bb_width  = bb_up - bb_lo
+sq_width  = ta.sma(bb_width, bb_len)
+squeeze   = bb_width < sq_width           // bands contracting
+vol_avg   = ta.sma(volume, 20)
+vol_spike = volume >= vol_avg * vol_mult
+atr       = ta.atr(14)
+// ── Breakout conditions ─────────────────────────────
+bo_long   = squeeze[1] and close > bb_up and vol_spike
+bo_short  = squeeze[1] and close < bb_lo and vol_spike
+// ── Execute ─────────────────────────────────────────
+if bo_long and strategy.position_size == 0
+    strategy.entry("BO Long", strategy.long)
+    strategy.exit("BO Long X","BO Long", stop=low-atr*0.5, limit=close+atr*rr)
+if bo_short and strategy.position_size == 0
+    strategy.entry("BO Short", strategy.short)
+    strategy.exit("BO Short X","BO Short", stop=high+atr*0.5, limit=close-atr*rr)
+// ── Visuals ─────────────────────────────────────────
+plot(bb_up,"BB Upper",color.new(color.purple,40),1)
+plot(bb_lo,"BB Lower",color.new(color.purple,40),1)
+bgcolor(squeeze ? color.new(color.yellow,96) : na, title="Squeeze")`,
+
+    mt5:`// TradingFlow - Vol Expansion EA (MQL5)
+#property copyright "TradingFlow"
+#include <Trade\\Trade.mqh>
+input int    BB_Period  = 20;
+input double BB_Dev     = 2.0;
+input double Vol_Mult   = 1.5;
+input double ATR_Stop   = 1.5;
+input double RR_Ratio   = 3.0;
+input double Risk_Pct   = 1.0;
+CTrade trade;
+int h_bb, h_atr;
+int OnInit() {
+   h_bb  = iBands(_Symbol,PERIOD_H1,BB_Period,0,BB_Dev,PRICE_CLOSE);
+   h_atr = iATR(_Symbol,PERIOD_H1,14);
+   return INIT_SUCCEEDED;
+}
+void OnTick() {
+   if(PositionsTotal() > 0) return;
+   double bbU[3],bbL[3],bbM[3],atr[2];
+   CopyBuffer(h_bb,1,0,3,bbU); CopyBuffer(h_bb,2,0,3,bbL);
+   CopyBuffer(h_bb,0,0,3,bbM); CopyBuffer(h_atr,0,0,2,atr);
+   ArraySetAsSeries(bbU,true); ArraySetAsSeries(bbL,true);
+   ArraySetAsSeries(bbM,true); ArraySetAsSeries(atr,true);
+   // BB width squeeze check
+   double w0=bbU[0]-bbL[0], w1=bbU[1]-bbL[1], w2=bbU[2]-bbL[2];
+   double wAvg=(w0+w1+w2)/3.0;
+   bool prevSqueeze = (bbU[1]-bbL[1]) < wAvg;
+   // Volume spike (use tick volume)
+   long vol[21]; CopyTickVolume(_Symbol,PERIOD_H1,0,21,vol);
+   ArraySetAsSeries(vol,true);
+   long volSum=0; for(int i=1;i<=20;i++) volSum+=vol[i];
+   bool volSpike = vol[0] >= (double)volSum/20.0 * Vol_Mult;
+   double ask=SymbolInfoDouble(_Symbol,SYMBOL_ASK);
+   double bid=SymbolInfoDouble(_Symbol,SYMBOL_BID);
+   if(prevSqueeze && ask > bbU[0] && volSpike) {
+      double sl=ask-atr[0]*ATR_Stop, tp=ask+atr[0]*ATR_Stop*RR_Ratio;
+      trade.Buy(CalcLots(ask-sl),_Symbol,ask,sl,tp,"BO-Long");
+   }
+   if(prevSqueeze && bid < bbL[0] && volSpike) {
+      double sl=bid+atr[0]*ATR_Stop, tp=bid-atr[0]*ATR_Stop*RR_Ratio;
+      trade.Sell(CalcLots(sl-bid),_Symbol,bid,sl,tp,"BO-Short");
+   }
+}
+double CalcLots(double rp) {
+   double b=AccountInfoDouble(ACCOUNT_BALANCE);
+   double tv=SymbolInfoDouble(_Symbol,SYMBOL_TRADE_TICK_VALUE);
+   double ts=SymbolInfoDouble(_Symbol,SYMBOL_TRADE_TICK_SIZE);
+   return NormalizeDouble((b*Risk_Pct/100)/(rp/ts*tv),2);
+}`,
+
+    ninja:`// TradingFlow - Vol Expansion (NinjaScript)
+using NinjaTrader.NinjaScript.Indicators;
+namespace NinjaTrader.NinjaScript.Strategies {
+  public class TF_VolExpansion : Strategy {
+    private Bollinger bbInd;
+    private ATR atrInd;
+    private SMA volSMA;
+    [NinjaScriptProperty] public double VolMult {get;set;} = 1.5;
+    [NinjaScriptProperty] public double ATRStop {get;set;} = 1.5;
+    [NinjaScriptProperty] public double RRRatio {get;set;} = 3.0;
+    protected override void OnStateChange() {
+      if(State==State.SetDefaults){
+        Name="TF Vol Expansion"; Calculate=Calculate.OnBarClose;
+        EntriesPerDirection=1;
+      }
+      if(State==State.DataLoaded){
+        bbInd  = Bollinger(2.0, 20);
+        atrInd = ATR(14);
+        volSMA = SMA(Volume, 20);
+        AddDataSeries(Data.BarsPeriodType.Minute, 60);
+      }
+    }
+    protected override void OnBarUpdate() {
+      if(CurrentBar < 25 || Position.MarketPosition != MarketPosition.Flat) return;
+      double bbW0  = bbInd.Upper[0]-bbInd.Lower[0];
+      double bbW1  = bbInd.Upper[1]-bbInd.Lower[1];
+      bool squeeze = bbW1 < SMA(bbInd.Upper-bbInd.Lower,20)[1];
+      bool volSpike= Volume[0] >= volSMA[1] * VolMult;
+      if(squeeze && Close[0] > bbInd.Upper[0] && volSpike) {
+        EnterLong(1,"BO-Long");
+        SetStopLoss("BO-Long",CalculationMode.Price,Low[0]-atrInd[0]*0.5,false);
+        SetProfitTarget("BO-Long",CalculationMode.Price,Close[0]+atrInd[0]*ATRStop*RRRatio);
+      }
+      if(squeeze && Close[0] < bbInd.Lower[0] && volSpike) {
+        EnterShort(1,"BO-Short");
+        SetStopLoss("BO-Short",CalculationMode.Price,High[0]+atrInd[0]*0.5,false);
+        SetProfitTarget("BO-Short",CalculationMode.Price,Close[0]-atrInd[0]*ATRStop*RRRatio);
+      }
+    }
+  }
+}`,
+
+    ts:`{ TradingFlow - Vol Expansion (TradeStation EasyLanguage) }
+Inputs:
+   BBLen(20), BBDev(2.0), VolMult(1.5), ATRStop(1.5), RR(3.0);
+Variables:
+   BBUpper(0),BBLower(0),BBW(0),AvgBBW(0),VolAvg(0),myATR(0);
+BBUpper = BollingerBand(Close,BBLen,BBDev);
+BBLower = BollingerBand(Close,BBLen,-BBDev);
+BBW     = BBUpper - BBLower;
+AvgBBW  = Average(BBW, BBLen);
+VolAvg  = Average(Volume, 20);
+myATR   = AvgTrueRange(14);
+{ Breakout Long }
+If BBW[1] < AvgBBW[1] AND Close > BBUpper AND
+   Volume >= VolAvg * VolMult AND MarketPosition = 0 Then Begin
+   Buy("BO-Long") Next Bar at Market;
+   SetStopLoss("BO-Long", Dollar, myATR*ATRStop*BigPointValue, False);
+   SetProfitTarget("BO-Long", Dollar, myATR*ATRStop*RR*BigPointValue, False);
+End;
+{ Breakout Short }
+If BBW[1] < AvgBBW[1] AND Close < BBLower AND
+   Volume >= VolAvg * VolMult AND MarketPosition = 0 Then Begin
+   Sell Short("BO-Short") Next Bar at Market;
+   SetStopLoss("BO-Short", Dollar, myATR*ATRStop*BigPointValue, False);
+   SetProfitTarget("BO-Short", Dollar, myATR*ATRStop*RR*BigPointValue, False);
+End;`,
+    okx:null,tradovate:null,amp:null,oanda:null,forex:null,wb:null,moomoo:null,rh:null,
+  }
+},
+
+'defensive-mode': {
+  name:'DEFENSIVE MODE', regime:'HIGH_VOL',
+  regimeColor:'#ef4444', regimeBg:'rgba(239,68,68,0.12)', regimeBorder:'rgba(239,68,68,0.3)',
+  variants:[
+    { name:'Reduced Size Trend', tagline:'50% size · 2× ATR stops · trending only',
+      desc:'Same as Trend Follower but position size cut by 50–70%. Stops widened to 2× ATR to avoid being stopped out by noise. No new entries in the last 60 minutes of any session. Only take the very best A+ setups — same entry rules but stricter filters (RSI 45–60 only).',
+      instruments:['EURUSD','GBPUSD','XAUUSD'],
+      session:'Avoid around major news — check ForexFactory' },
+    { name:'Stand Aside', tagline:'No trades when ATR > 3× baseline',
+      desc:'When ATR exceeds 3× its 20-period average, the system takes no new positions. All open positions have stops tightened to 1× ATR. After a major news event (NFP, FOMC, CPI), wait 30 minutes before re-entering. Capital preservation is the goal.',
+      instruments:['All pairs'],
+      session:'Avoid: NFP Friday, FOMC day, CPI releases' },
+    { name:'Hedging Overlay', tagline:'Open opposing micro position as hedge',
+      desc:'When holding a position and HIGH_VOL is detected, open a micro-lot hedge in the opposite direction (25–50% of original size). This caps the drawdown during the volatile period. Close the hedge when ATR normalizes below 1.5× baseline. Use only on platforms that allow hedging.',
+      instruments:['EURUSD','GBPUSD','MT5 platforms only'],
+      session:'Around all major economic releases' },
+  ],
+  code:{
+    tv:`//@version=5
+strategy("TradingFlow · Defensive Mode Filter", overlay=true,
+     default_qty_type=strategy.percent_of_equity, default_qty_value=0.5)
+// Defensive Mode: same as Trend Follower but with HIGH_VOL filter
+// When HIGH_VOL detected: 50% size, 2x stops, skip new entries
+// ── Inputs ──────────────────────────────────────────
+ema_fast    = input.int(21,   "Fast EMA")
+ema_slow    = input.int(50,   "Slow EMA")
+adx_min     = input.float(25, "ADX Min (trending)")
+atr_hi_mult = input.float(2.0,"HIGH_VOL ATR Mult")  // ATR > 2x = high vol
+atr_stop    = input.float(2.0,"ATR Stop (2x wide)")
+rr          = input.float(1.5,"R:R (tighter in HV)")
+// ── Calculations ────────────────────────────────────
+ema21    = ta.ema(close, ema_fast)
+ema50    = ta.ema(close, ema_slow)
+[dp,dm,adx] = ta.dmi(14,14)
+atr      = ta.atr(14)
+atr_base = ta.sma(atr, 20)
+// ── Regime flags ────────────────────────────────────
+high_vol  = atr > atr_base * atr_hi_mult
+trending  = adx > adx_min and dp > dm and ema21 > ema50 and not high_vol
+defensive = adx > adx_min and dp > dm and ema21 > ema50 and high_vol
+// ── Entry: skip during HIGH_VOL if desired ──────────
+entry = trending  // remove 'not high_vol' from trending to allow defensive trades
+// ── Execute ─────────────────────────────────────────
+qty = defensive ? 0.5 : 1.0  // halve size in high vol
+if entry and strategy.position_size == 0
+    sl = close - atr * atr_stop
+    tp = close + atr * atr_stop * rr
+    strategy.entry("Def Long", strategy.long, qty=qty)
+    strategy.exit("Exit","Def Long", stop=sl, limit=tp)
+// ── Visuals ─────────────────────────────────────────
+bgcolor(high_vol  ? color.new(color.red,   92) : na, title="HIGH_VOL")
+bgcolor(defensive ? color.new(color.orange,94) : na, title="Defensive")
+plot(ema21,"EMA21",color.blue,2)
+plot(atr_base*atr_hi_mult,"ATR Threshold",color.new(color.red,60),1,plot.style_line)`,
+
+    mt5:`// TradingFlow - Defensive Mode EA (MQL5)
+// Halves position size when ATR > 2x baseline
+#property copyright "TradingFlow"
+#include <Trade\\Trade.mqh>
+input int    EMA_Fast   = 21;
+input int    EMA_Slow   = 50;
+input double ADX_Min    = 25.0;
+input double ATR_HV     = 2.0;  // HIGH_VOL multiplier
+input double ATR_Stop   = 2.0;  // wider stops in HV
+input double RR_Ratio   = 1.5;
+input double Risk_Pct   = 1.0;
+CTrade trade;
+int h_ema21,h_ema50,h_adx,h_atr,h_atrSma;
+int OnInit() {
+   h_ema21  = iMA(_Symbol,PERIOD_H1,EMA_Fast,0,MODE_EMA,PRICE_CLOSE);
+   h_ema50  = iMA(_Symbol,PERIOD_H1,EMA_Slow,0,MODE_EMA,PRICE_CLOSE);
+   h_adx    = iADX(_Symbol,PERIOD_H1,14);
+   h_atr    = iATR(_Symbol,PERIOD_H1,14);
+   h_atrSma = iMA(_Symbol,PERIOD_H1,20,0,MODE_SMA,PRICE_CLOSE); // proxy
+   return INIT_SUCCEEDED;
+}
+void OnTick() {
+   if(PositionsTotal()>0) return;
+   double ema21[2],ema50[2],adx[2],dp[2],atr[2];
+   CopyBuffer(h_ema21,0,0,2,ema21); CopyBuffer(h_ema50,0,0,2,ema50);
+   CopyBuffer(h_adx,0,0,2,adx); CopyBuffer(h_adx,1,0,2,dp);
+   CopyBuffer(h_atr,0,0,2,atr);
+   ArraySetAsSeries(ema21,true); ArraySetAsSeries(ema50,true);
+   ArraySetAsSeries(adx,true); ArraySetAsSeries(dp,true); ArraySetAsSeries(atr,true);
+   // Simple ATR baseline using 20-bar average of ATR values
+   double atrBuf[21]; CopyBuffer(h_atr,0,0,21,atrBuf); ArraySetAsSeries(atrBuf,true);
+   double atrSum=0; for(int i=1;i<=20;i++) atrSum+=atrBuf[i];
+   double atrBase=atrSum/20.0;
+   bool highVol  = atr[0] > atrBase * ATR_HV;
+   bool trending = adx[0]>ADX_Min && dp[0]>0 && ema21[0]>ema50[0];
+   if(!trending) return;
+   double ask=SymbolInfoDouble(_Symbol,SYMBOL_ASK);
+   double sl=ask-atr[0]*ATR_Stop, tp=ask+atr[0]*ATR_Stop*RR_Ratio;
+   double lots=CalcLots(ask-sl);
+   if(highVol) lots*=0.5; // half size in high vol
+   lots=NormalizeDouble(lots,2);
+   if(lots>=0.01) trade.Buy(lots,_Symbol,ask,sl,tp,highVol?"Def-HV":"Def-Norm");
+}
+double CalcLots(double rp) {
+   double b=AccountInfoDouble(ACCOUNT_BALANCE);
+   double tv=SymbolInfoDouble(_Symbol,SYMBOL_TRADE_TICK_VALUE);
+   double ts=SymbolInfoDouble(_Symbol,SYMBOL_TRADE_TICK_SIZE);
+   return NormalizeDouble((b*Risk_Pct/100)/(rp/ts*tv),2);
+}`,
+
+    ninja:`// TradingFlow - Defensive Mode (NinjaScript)
+namespace NinjaTrader.NinjaScript.Strategies {
+  public class TF_DefensiveMode : Strategy {
+    private EMA ema21, ema50;
+    private ADX adxInd;
+    private ATR atrInd;
+    private SMA atrSma;
+    [NinjaScriptProperty] public double ADXMin  {get;set;} = 25;
+    [NinjaScriptProperty] public double ATRHiMult{get;set;} = 2.0;
+    [NinjaScriptProperty] public double ATRStop {get;set;} = 2.0;
+    [NinjaScriptProperty] public double RRRatio {get;set;} = 1.5;
+    protected override void OnStateChange() {
+      if(State==State.SetDefaults){ Name="TF Defensive Mode"; Calculate=Calculate.OnBarClose; EntriesPerDirection=1; }
+      if(State==State.DataLoaded){
+        ema21=EMA(21); ema50=EMA(50); adxInd=ADX(14); atrInd=ATR(14);
+        atrSma = SMA(atrInd, 20);
+      }
+    }
+    protected override void OnBarUpdate() {
+      if(CurrentBar<25 || Position.MarketPosition!=MarketPosition.Flat) return;
+      bool highVol  = atrInd[0] > atrSma[0]*ATRHiMult;
+      bool trending = adxInd[0]>ADXMin && ema21[0]>ema50[0];
+      if(!trending) return;
+      int qty = highVol ? 1 : 2; // half size = 1 unit when high vol, full = 2
+      EnterLong(qty,"Def-Long");
+      SetStopLoss("Def-Long",CalculationMode.Price,Close[0]-atrInd[0]*ATRStop,false);
+      SetProfitTarget("Def-Long",CalculationMode.Price,Close[0]+atrInd[0]*ATRStop*RRRatio);
+    }
+  }
+}`,
+
+    ts:`{ TradingFlow - Defensive Mode (TradeStation EasyLanguage) }
+Inputs:
+   EMAFast(21), EMASlow(50), ADXMin(25),
+   ATRHiMult(2.0), ATRStop(2.0), RR(1.5);
+Variables:
+   myEMA21(0),myEMA50(0),myADX(0),myATR(0),atrBase(0),
+   isHighVol(False),isTrending(False),tradeLots(0);
+myEMA21    = XAverage(Close,EMAFast);
+myEMA50    = XAverage(Close,EMASlow);
+myADX      = ADX(14);
+myATR      = AvgTrueRange(14);
+atrBase    = Average(myATR,20);
+isHighVol  = myATR > atrBase * ATRHiMult;
+isTrending = myADX > ADXMin AND myEMA21 > myEMA50;
+If isTrending AND MarketPosition = 0 Then Begin
+   { Use 50% size in high vol — adjust lot size in strategy settings }
+   Buy("Def-Long") Next Bar at Market;
+   SetStopLoss("Def-Long", Dollar, myATR*ATRStop*BigPointValue, False);
+   SetProfitTarget("Def-Long", Dollar, myATR*ATRStop*RR*BigPointValue, False);
+   { Note: manually reduce contract size by 50% when isHighVol = True }
+End;`,
+    okx:null,tradovate:null,amp:null,oanda:null,forex:null,wb:null,moomoo:null,rh:null,
+  }
+},
+
+'range-scalper': {
+  name:'RANGE SCALPER', regime:'LOW_VOL',
+  regimeColor:'#06b6d4', regimeBg:'rgba(6,182,212,0.12)', regimeBorder:'rgba(6,182,212,0.3)',
+  variants:[
+    { name:'S/R Pivot Fade', tagline:'Key levels + pin bar rejection · 5m / 15m',
+      desc:'Mark daily pivot points (P, R1, S1). When price approaches a level and a rejection candle forms (pin bar, doji, engulfing) with RSI between 30–70 and ADX < 20, fade the move. Target the next pivot level. Stop 3 pips beyond the rejection candle wick.',
+      instruments:['EURUSD','USDJPY','GBPUSD','AUDUSD'],
+      session:'Asian session (00:00–07:00 UTC) — tight range' },
+    { name:'BB Band Scalp', tagline:'Bollinger 1σ reversion · 1m / 5m',
+      desc:'Use tighter Bollinger Bands (1.5 StdDev, 15 period). Enter at the outer band, target the midline. Volume must be below average (confirming low vol environment). Maximum 3 trades per session. Critical: spread must be less than 30% of your target profit.',
+      instruments:['EURUSD','USDJPY (Asian session)'],
+      session:'Dead zone — 21:00–00:00 UTC, Asian open' },
+    { name:'Opening Range Scalp', tagline:'First 15-min range fade or break · 1m',
+      desc:'Mark the high and low of the first 15 minutes after a session open. Fade moves back to the midpoint of the range, or enter breakouts when the range is unusually small (ATR < 0.5× baseline). High win rate but tiny R. Works in low-vol pre-news periods.',
+      instruments:['ES Futures','NQ Futures','GBPUSD at London open'],
+      session:'First 15 min of London (07:00 UTC) or NY (13:30 UTC)' },
+  ],
+  code:{
+    tv:`//@version=5
+strategy("TradingFlow · Range Scalper", overlay=true,
+     default_qty_type=strategy.percent_of_equity, default_qty_value=0.5,
+     commission_type=strategy.commission.percent, commission_value=0.05)
+// ── Inputs ──────────────────────────────────────────
+bb_len   = input.int(15,   "BB Length (tighter)", group="BB")
+bb_dev   = input.float(1.5,"BB StdDev",           group="BB")
+adx_max  = input.float(20, "ADX Max (range)",     group="Regime")
+atr_max  = input.float(0.6,"ATR/Baseline Max",    group="Regime")
+atr_stop = input.float(1.0,"ATR Stop Mult",       group="Risk")
+// ── Calculations ────────────────────────────────────
+[bb_mid, bb_up, bb_lo] = ta.bb(close, bb_len, bb_dev)
+[dp, dm, adx] = ta.dmi(14,14)
+atr      = ta.atr(14)
+atr_base = ta.sma(atr, 20)
+rsi      = ta.rsi(close, 14)
+// ── Regime: LOW_VOL ─────────────────────────────────
+low_vol = adx < adx_max and atr < atr_base * atr_max
+// ── Scalp entries ───────────────────────────────────
+buy_sc  = low_vol and close <= bb_lo and rsi > 30 and rsi < 50
+sell_sc = low_vol and close >= bb_up and rsi < 70 and rsi > 50
+// ── Execute ─────────────────────────────────────────
+if buy_sc and strategy.position_size == 0
+    strategy.entry("Scalp L", strategy.long)
+    strategy.exit("SL Exit","Scalp L", stop=close-atr*atr_stop, limit=bb_mid)
+if sell_sc and strategy.position_size == 0
+    strategy.entry("Scalp S", strategy.short)
+    strategy.exit("SS Exit","Scalp S", stop=close+atr*atr_stop, limit=bb_mid)
+// ── Visuals ─────────────────────────────────────────
+plot(bb_mid,"BB Mid",  color.gray,1)
+plot(bb_up, "BB Upper",color.new(color.teal,40),1)
+plot(bb_lo, "BB Lower",color.new(color.teal,40),1)
+bgcolor(low_vol ? color.new(color.teal,95) : na)`,
+
+    mt5:`// TradingFlow - Range Scalper EA (MQL5)
+#property copyright "TradingFlow"
+#include <Trade\\Trade.mqh>
+input int    BB_Period = 15;
+input double BB_Dev    = 1.5;
+input double ADX_Max   = 20.0;
+input double ATR_Max   = 0.6;
+input double ATR_Stop  = 1.0;
+input double Risk_Pct  = 0.5;   // smaller risk for scalps
+CTrade trade;
+int h_bb,h_rsi,h_adx,h_atr;
+int OnInit() {
+   h_bb  = iBands(_Symbol,PERIOD_M5,BB_Period,0,BB_Dev,PRICE_CLOSE);
+   h_rsi = iRSI(_Symbol,PERIOD_M5,14,PRICE_CLOSE);
+   h_adx = iADX(_Symbol,PERIOD_M5,14);
+   h_atr = iATR(_Symbol,PERIOD_M5,14);
+   return INIT_SUCCEEDED;
+}
+void OnTick() {
+   if(PositionsTotal()>0) return;
+   double bbU[2],bbL[2],bbM[2],rsi[2],adx[2],atr[2];
+   CopyBuffer(h_bb,1,0,2,bbU); CopyBuffer(h_bb,2,0,2,bbL);
+   CopyBuffer(h_bb,0,0,2,bbM); CopyBuffer(h_rsi,0,0,2,rsi);
+   CopyBuffer(h_adx,0,0,2,adx); CopyBuffer(h_atr,0,0,2,atr);
+   ArraySetAsSeries(bbU,true); ArraySetAsSeries(bbL,true); ArraySetAsSeries(bbM,true);
+   ArraySetAsSeries(rsi,true); ArraySetAsSeries(adx,true); ArraySetAsSeries(atr,true);
+   double atrBuf[21]; CopyBuffer(h_atr,0,0,21,atrBuf); ArraySetAsSeries(atrBuf,true);
+   double atrSum=0; for(int i=1;i<=20;i++) atrSum+=atrBuf[i];
+   double atrBase=atrSum/20.0;
+   bool lowVol = adx[0]<ADX_Max && atr[0]<atrBase*ATR_Max;
+   if(!lowVol) return;
+   double ask=SymbolInfoDouble(_Symbol,SYMBOL_ASK);
+   double bid=SymbolInfoDouble(_Symbol,SYMBOL_BID);
+   if(ask<=bbL[0] && rsi[0]>30 && rsi[0]<50) {
+      double sl=ask-atr[0]*ATR_Stop, tp=bbM[0];
+      trade.Buy(CalcLots(ask-sl),_Symbol,ask,sl,tp,"Scalp-L");
+   }
+   if(bid>=bbU[0] && rsi[0]<70 && rsi[0]>50) {
+      double sl=bid+atr[0]*ATR_Stop, tp=bbM[0];
+      trade.Sell(CalcLots(sl-bid),_Symbol,bid,sl,tp,"Scalp-S");
+   }
+}
+double CalcLots(double rp) {
+   double b=AccountInfoDouble(ACCOUNT_BALANCE);
+   double tv=SymbolInfoDouble(_Symbol,SYMBOL_TRADE_TICK_VALUE);
+   double ts=SymbolInfoDouble(_Symbol,SYMBOL_TRADE_TICK_SIZE);
+   return NormalizeDouble((b*Risk_Pct/100)/(rp/ts*tv),2);
+}`,
+
+    ninja:`// TradingFlow - Range Scalper (NinjaScript)
+namespace NinjaTrader.NinjaScript.Strategies {
+  public class TF_RangeScalper : Strategy {
+    private Bollinger bbInd;
+    private RSI rsiInd;
+    private ADX adxInd;
+    private ATR atrInd;
+    private SMA atrSma;
+    [NinjaScriptProperty] public double ADXMax  {get;set;} = 20;
+    [NinjaScriptProperty] public double ATRMax  {get;set;} = 0.6;
+    [NinjaScriptProperty] public double ATRStop {get;set;} = 1.0;
+    protected override void OnStateChange() {
+      if(State==State.SetDefaults){ Name="TF Range Scalper"; Calculate=Calculate.OnBarClose; EntriesPerDirection=1; }
+      if(State==State.DataLoaded){
+        bbInd=Bollinger(1.5,15); rsiInd=RSI(14,3); adxInd=ADX(14); atrInd=ATR(14);
+        atrSma=SMA(atrInd,20);
+      }
+    }
+    protected override void OnBarUpdate() {
+      if(CurrentBar<25 || Position.MarketPosition!=MarketPosition.Flat) return;
+      bool lowVol = adxInd[0]<ADXMax && atrInd[0]<atrSma[0]*ATRMax;
+      if(!lowVol) return;
+      if(Close[0]<=bbInd.Lower[0] && rsiInd[0]>30 && rsiInd[0]<50) {
+        EnterLong(1,"Scalp-L");
+        SetStopLoss("Scalp-L",CalculationMode.Price,Close[0]-atrInd[0]*ATRStop,false);
+        SetProfitTarget("Scalp-L",CalculationMode.Price,bbInd.Middle[0]);
+      }
+      if(Close[0]>=bbInd.Upper[0] && rsiInd[0]<70 && rsiInd[0]>50) {
+        EnterShort(1,"Scalp-S");
+        SetStopLoss("Scalp-S",CalculationMode.Price,Close[0]+atrInd[0]*ATRStop,false);
+        SetProfitTarget("Scalp-S",CalculationMode.Price,bbInd.Middle[0]);
+      }
+    }
+  }
+}`,
+
+    ts:`{ TradingFlow - Range Scalper (TradeStation EasyLanguage) }
+Inputs:
+   BBLen(15), BBDev(1.5), ADXMax(20), ATRMaxMult(0.6), ATRStop(1.0);
+Variables:
+   BBU(0),BBL(0),BBM(0),myRSI(0),myADX(0),myATR(0),atrBase(0);
+BBU     = BollingerBand(Close,BBLen,BBDev);
+BBL     = BollingerBand(Close,BBLen,-BBDev);
+BBM     = Average(Close,BBLen);
+myRSI   = RSI(Close,14);
+myADX   = ADX(14);
+myATR   = AvgTrueRange(14);
+atrBase = Average(myATR,20);
+If myADX < ADXMax AND myATR < atrBase*ATRMaxMult Then Begin
+   If Close<=BBL AND myRSI>30 AND myRSI<50 AND MarketPosition=0 Then Begin
+      Buy("Scalp-L") Next Bar at Market;
+      SetStopLoss("Scalp-L",Dollar,myATR*ATRStop*BigPointValue,False);
+      SetProfitTarget("Scalp-L",Dollar,(BBM-Close)*BigPointValue,False);
+   End;
+   If Close>=BBU AND myRSI<70 AND myRSI>50 AND MarketPosition=0 Then Begin
+      Sell Short("Scalp-S") Next Bar at Market;
+      SetStopLoss("Scalp-S",Dollar,myATR*ATRStop*BigPointValue,False);
+      SetProfitTarget("Scalp-S",Dollar,(Close-BBM)*BigPointValue,False);
+   End;
+End;`,
+    okx:null,tradovate:null,amp:null,oanda:null,forex:null,wb:null,moomoo:null,rh:null,
+  }
+},
+
+'short-trend': {
+  name:'SHORT TREND FOLLOWER', regime:'TRENDING_DOWN',
+  regimeColor:'#ef4444', regimeBg:'rgba(239,68,68,0.12)', regimeBorder:'rgba(239,68,68,0.3)',
+  variants:[
+    { name:'EMA Pullback Short', tagline:'Dead-cat bounce short · EMA 21/50 bear stack · 15m / 1h',
+      desc:'Mirror of Trend Follower. Enter short on dead-cat bounces up to EMA21 while EMA21 < EMA50 and ADX > 25. −DI must lead +DI. RSI should be between 45–60 on the bounce (not oversold). Stop 1.5× ATR above entry. Target 1.8× ATR below.',
+      instruments:['GBPUSD','EURJPY','NAS100 (bear market)','BTC/USD'],
+      session:'London/NY overlap for best liquidity' },
+    { name:'Death Cross Continuation', tagline:'EMA 50/200 death cross + ADX > 30 · 4h / 1d',
+      desc:'Enter short when EMA50 crosses below EMA200 (death cross) and ADX > 30 (strong trend). Wait for the first pullback to EMA50 after the cross. This is a swing trade — hold 3–10 days. Stop above the most recent swing high. Trail using EMA50.',
+      instruments:['GBPUSD','EURUSD','SPY (bear)','BTC/USD'],
+      session:'Daily charts — enter at daily close' },
+    { name:'Lower High Breakdown', tagline:'LH/LL structure + momentum · 1h',
+      desc:'After confirming a series of lower highs and lower lows, enter short at each new lower high formation. RSI divergence (price making higher high, RSI making lower high) is a bonus confirmation. Stop above the lower high. Trail using 3-bar trailing stop.',
+      instruments:['All forex pairs','US indices in downtrend'],
+      session:'Any session — trade the structure' },
+  ],
+  code:{
+    tv:`//@version=5
+strategy("TradingFlow · Short Trend Follower", overlay=true,
+     default_qty_type=strategy.percent_of_equity, default_qty_value=1,
+     commission_type=strategy.commission.percent, commission_value=0.05)
+// ── Inputs ──────────────────────────────────────────
+ema_fast = input.int(21,   "Fast EMA")
+ema_slow = input.int(50,   "Slow EMA")
+adx_min  = input.float(25, "ADX Min")
+rsi_lo   = input.float(45, "RSI Min on bounce")
+rsi_hi   = input.float(62, "RSI Max on bounce")
+atr_stop = input.float(1.5,"ATR Stop Mult")
+rr       = input.float(1.8,"R:R Ratio")
+// ── Calculations ────────────────────────────────────
+ema21 = ta.ema(close, ema_fast)
+ema50 = ta.ema(close, ema_slow)
+[dp, dm, adx] = ta.dmi(14,14)
+rsi   = ta.rsi(close, 14)
+atr   = ta.atr(14)
+// ── Regime: TRENDING_DOWN ───────────────────────────
+trending_dn = adx > adx_min and dm > dp and ema21 < ema50
+// ── Entry: dead-cat bounce to EMA21 ────────────────
+at_ema21  = high >= ema21 * 0.998 and close < ema21
+rsi_ok    = rsi > rsi_lo and rsi < rsi_hi
+entry_sh  = trending_dn and at_ema21 and rsi_ok
+// ── Execute ─────────────────────────────────────────
+if entry_sh and strategy.position_size == 0
+    sl = close + atr * atr_stop
+    tp = close - atr * atr_stop * rr
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Short X","Short", stop=sl, limit=tp)
+// ── Visuals ─────────────────────────────────────────
+plot(ema21,"EMA 21",color.blue,2)
+plot(ema50,"EMA 50",color.orange,1)
+bgcolor(trending_dn ? color.new(color.red,94) : na)
+plotshape(entry_sh and strategy.position_size==0,"Sell",shape.triangledown,location.abovebar,color.red,size=size.small)`,
+
+    mt5:`// TradingFlow - Short Trend Follower EA (MQL5)
+#property copyright "TradingFlow"
+#include <Trade\\Trade.mqh>
+input int    EMA_Fast  = 21;
+input int    EMA_Slow  = 50;
+input double ADX_Min   = 25.0;
+input double ATR_Stop  = 1.5;
+input double RR_Ratio  = 1.8;
+input double Risk_Pct  = 1.0;
+CTrade trade;
+int h_ema21,h_ema50,h_adx,h_atr;
+int OnInit() {
+   h_ema21=iMA(_Symbol,PERIOD_H1,EMA_Fast,0,MODE_EMA,PRICE_CLOSE);
+   h_ema50=iMA(_Symbol,PERIOD_H1,EMA_Slow,0,MODE_EMA,PRICE_CLOSE);
+   h_adx=iADX(_Symbol,PERIOD_H1,14);
+   h_atr=iATR(_Symbol,PERIOD_H1,14);
+   return INIT_SUCCEEDED;
+}
+void OnTick() {
+   if(PositionsTotal()>0) return;
+   double ema21[2],ema50[2],adx[2],dm[2],atr[2];
+   CopyBuffer(h_ema21,0,0,2,ema21); CopyBuffer(h_ema50,0,0,2,ema50);
+   CopyBuffer(h_adx,0,0,2,adx); CopyBuffer(h_adx,2,0,2,dm);
+   CopyBuffer(h_atr,0,0,2,atr);
+   ArraySetAsSeries(ema21,true); ArraySetAsSeries(ema50,true);
+   ArraySetAsSeries(adx,true); ArraySetAsSeries(dm,true); ArraySetAsSeries(atr,true);
+   bool trendDn  = adx[0]>ADX_Min && dm[0]>0 && ema21[0]<ema50[0];
+   double high1  = iHigh(_Symbol,PERIOD_H1,1);
+   bool atEma    = high1 >= ema21[0]*0.998;
+   if(trendDn && atEma) {
+      double bid=SymbolInfoDouble(_Symbol,SYMBOL_BID);
+      double sl=bid+atr[0]*ATR_Stop, tp=bid-atr[0]*ATR_Stop*RR_Ratio;
+      trade.Sell(CalcLots(sl-bid),_Symbol,bid,sl,tp,"STF-Short");
+   }
+}
+double CalcLots(double rp) {
+   double b=AccountInfoDouble(ACCOUNT_BALANCE);
+   double tv=SymbolInfoDouble(_Symbol,SYMBOL_TRADE_TICK_VALUE);
+   double ts=SymbolInfoDouble(_Symbol,SYMBOL_TRADE_TICK_SIZE);
+   return NormalizeDouble((b*Risk_Pct/100)/(rp/ts*tv),2);
+}`,
+
+    ninja:`// TradingFlow - Short Trend Follower (NinjaScript)
+namespace NinjaTrader.NinjaScript.Strategies {
+  public class TF_ShortTrend : Strategy {
+    private EMA ema21, ema50;
+    private ADX adxInd;
+    private ATR atrInd;
+    private RSI rsiInd;
+    [NinjaScriptProperty] public double ADXMin  {get;set;} = 25;
+    [NinjaScriptProperty] public double ATRStop {get;set;} = 1.5;
+    [NinjaScriptProperty] public double RRRatio {get;set;} = 1.8;
+    protected override void OnStateChange() {
+      if(State==State.SetDefaults){ Name="TF Short Trend"; Calculate=Calculate.OnBarClose; EntriesPerDirection=1; }
+      if(State==State.DataLoaded){ ema21=EMA(21); ema50=EMA(50); adxInd=ADX(14); atrInd=ATR(14); rsiInd=RSI(14,3); }
+    }
+    protected override void OnBarUpdate() {
+      if(CurrentBar<25 || Position.MarketPosition!=MarketPosition.Flat) return;
+      bool trendDn  = adxInd[0]>ADXMin && ema21[0]<ema50[0];
+      bool atEma    = High[1]>=ema21[0]*0.998 && Close[0]<ema21[0];
+      bool rsiOk    = rsiInd[0]>45 && rsiInd[0]<62;
+      if(trendDn && atEma && rsiOk) {
+        EnterShort(1,"STF-Short");
+        SetStopLoss("STF-Short",CalculationMode.Price,Close[0]+atrInd[0]*ATRStop,false);
+        SetProfitTarget("STF-Short",CalculationMode.Price,Close[0]-atrInd[0]*ATRStop*RRRatio);
+      }
+    }
+  }
+}`,
+
+    ts:`{ TradingFlow - Short Trend Follower (TradeStation EasyLanguage) }
+Inputs:
+   EMAFast(21), EMASlow(50), ADXMin(25), ATRStop(1.5), RR(1.8);
+Variables:
+   myEMA21(0),myEMA50(0),myADX(0),myATR(0),myRSI(0),isTrendDn(False);
+myEMA21    = XAverage(Close,EMAFast);
+myEMA50    = XAverage(Close,EMASlow);
+myADX      = ADX(14);
+myATR      = AvgTrueRange(14);
+myRSI      = RSI(Close,14);
+isTrendDn  = myADX > ADXMin AND myEMA21 < myEMA50;
+{ Dead-cat bounce to EMA21 }
+If isTrendDn AND High[1] >= myEMA21*0.998 AND Close < myEMA21 AND
+   myRSI > 45 AND myRSI < 62 AND MarketPosition = 0 Then Begin
+   Sell Short("STF-Short") Next Bar at Market;
+   SetStopLoss("STF-Short", Dollar, myATR*ATRStop*BigPointValue, False);
+   SetProfitTarget("STF-Short", Dollar, myATR*ATRStop*RR*BigPointValue, False);
+End;`,
+    okx:null,tradovate:null,amp:null,oanda:null,forex:null,wb:null,moomoo:null,rh:null,
+  }
+}
+};
+
+// ── Manual platform instructions (shared template, customized per platform) ──
+const MANUAL_PLATFORMS = {
+  okx: {
+    label: 'OKX',
+    steps: (s) => [
+      { title:'Open TradingView + Connect Webhook',
+        desc:'In TradingView, go to the strategy you\'ve already added and click "Create Alert". Set the alert condition to your strategy\'s entry signal.' },
+      { title:'Set webhook URL',
+        desc:'In Alert settings → Notifications → Webhook URL, paste your OKX webhook endpoint. Use a bot service like 3Commas, Altrady, or Cornix that bridges TradingView → OKX.',
+        code:'https://api.3commas.io/public/api/ver1/smart_trades' },
+      { title:'Configure the alert message (JSON)',
+        desc:'Set the message body to JSON that your bot service expects. Example for 3Commas:',
+        code:'{"secret":"YOUR_SECRET","max_lag":"60","timestamp":"{{timenow}}","trigger_price":"{{close}}","tv_exchange":"{{exchange}}","tv_instrument":"{{ticker}}","action":"buy","bot_uuid":"YOUR_BOT_ID"}' },
+      { title:'Set position size on OKX bot',
+        desc:`On your bot platform, set order size to 1% of account equity. For ${s.name}: use market orders, set TP at ${s.variants[0].tagline.split('·')[0].trim()} target.` },
+      { title:'Paper trade first',
+        desc:'Run in OKX demo mode for 2 weeks minimum before going live. Check fill prices match expected entry.' },
+    ]
+  },
+  tradovate: {
+    label: 'Tradovate',
+    steps: (s) => [
+      { title:'Open a Tradovate chart',
+        desc:'Log into Tradovate → Charts. Right-click chart → Add Indicator. Search for the indicators needed.' },
+      { title:'Add EMA indicators',
+        desc:'For Trend strategies: Add EMA(21) and EMA(50). Color EMA21 blue, EMA50 orange. This is your trend bias filter.',
+        code:'EMA(21) + EMA(50) + ADX(14)' },
+      { title:`Set up ${s.name} manually`,
+        desc:`${s.variants[0].desc} Watch for the setup to appear, then click Buy/Sell in the DOM ladder.` },
+      { title:'Use DOM for entry',
+        desc:'In Tradovate\'s DOM (Depth of Market), pre-place your stop and target orders as bracket orders before entering. Right-click the price ladder → Bracket Order.' },
+      { title:'Risk settings',
+        desc:'Go to Settings → Risk Management. Set Max Daily Loss to 3% of account. Set per-trade risk to 1%.' },
+    ]
+  },
+  amp: {
+    label: 'AMP Futures',
+    steps: (s) => [
+      { title:'AMP connects to multiple platforms',
+        desc:'AMP Futures is a broker — you trade through platforms like NinjaTrader, Sierra Chart, Rithmic, or CQG. Use the NinjaTrader code from the "NinjaTrader" tab for full automation.' },
+      { title:'Open NinjaTrader with AMP account',
+        desc:'Download NinjaTrader 8 → Connect using your AMP Rithmic credentials. Go to New → Strategy → paste the NinjaScript code from the NinjaTrader tab.' },
+      { title:'Compile and backtest',
+        desc:'In NinjaTrader → Strategy Analyzer → load your strategy → run backtest on 2+ years of data before enabling live trading.' },
+      { title:`Configure ${s.name} parameters`,
+        desc:`Set ADX Min to 25, ATR Stop to 1.5, RR to 1.8 (or per variant). Use ES or NQ futures for best liquidity with AMP's low commissions.` },
+      { title:'Enable in Strategy Manager',
+        desc:'NinjaTrader → Strategies → right-click → Enable → set to live. AMP charges ~$0.25/side per contract — factor this into your backtest commissions.' },
+    ]
+  },
+  oanda: {
+    label: 'OANDA',
+    steps: (s) => [
+      { title:'Open OANDA fxTrade platform',
+        desc:'Log into OANDA → fxTrade Advanced. Open a chart on your chosen pair. Right-click → Add Indicator.' },
+      { title:'Add required indicators',
+        desc:`For ${s.name}: Add EMA(21), EMA(50), and ADX(14). Set chart timeframe to 1H.`,
+        code:'Technical Indicators → EMA → Period 21 / 50' },
+      { title:'Set up order template',
+        desc:'In OANDA\'s "Order Ticket" → click "Advanced". Pre-set Stop Loss to 1.5× ATR and Take Profit to 1.8× ATR. Save as a template for quick execution.' },
+      { title:`Watch for ${s.variants[0].name} setup`,
+        desc:s.variants[0].desc },
+      { title:'Enter with 1% risk',
+        desc:'Calculate position size: (Account Balance × 0.01) ÷ Stop Distance in pips = Lot Size. OANDA allows micro-lots (0.001) so precise sizing is possible.' },
+      { title:'OANDA API (optional automation)',
+        desc:'OANDA has a REST API at api-fxtrade.oanda.com. Use Python with oandapyV20 library to automate entries based on the TradingView Pine Script signals.',
+        code:'pip install oandapyV20' },
+    ]
+  },
+  forex: {
+    label: 'Forex.com',
+    steps: (s) => [
+      { title:'Open Forex.com Web Platform or MT4/MT5',
+        desc:'Forex.com supports MetaTrader 4 and 5. If using MT5, paste the MQL5 EA code from the MetaTrader 5 tab — it works directly with your Forex.com MT5 account.' },
+      { title:'Manual trading setup',
+        desc:`On the web platform: open a chart, set timeframe to 1H. Add EMA(21), EMA(50), and ADX(14) from the indicator menu.` },
+      { title:`Identify ${s.name} conditions`,
+        desc:s.variants[0].desc },
+      { title:'Use the built-in order ticket',
+        desc:'Click "New Order" → set Stop Loss and Take Profit distances based on ATR. Forex.com shows ATR in the platform — use the current ATR value × multiplier for your stop distance.' },
+      { title:'Risk management',
+        desc:'In Account Settings → set the "Close at loss" (max daily loss) to 3% of account. Forex.com\'s Advanced Order Entry allows bracket orders with SL/TP pre-set.' },
+    ]
+  },
+  wb: {
+    label: 'Webull',
+    steps: (s) => [
+      { title:'Webull works for stocks, options & futures — not Forex',
+        desc:`${s.name} works best on US stocks and ETFs on Webull. For forex pairs, use a different platform. Best instruments: SPY, QQQ, individual stocks.` },
+      { title:'Set up your chart',
+        desc:'Open Webull → Charts → search your symbol. Click the indicator (fx) button → add EMA(21), EMA(50), and RSI(14).' },
+      { title:'Enable Extended Trading (optional)',
+        desc:'For pre-market setups, go to Settings → Extended Hours Trading. Note: liquidity is lower outside regular hours.' },
+      { title:`Watch for ${s.variants[0].name} setup`,
+        desc:s.variants[0].desc + ' On Webull, watch for the candle close confirmation before entering.' },
+      { title:'Enter using conditional orders',
+        desc:'Tap "Trade" → "Conditional Order" → set a LIMIT BUY at your entry price with an attached Stop Loss order. Webull supports bracket orders on stocks.' },
+      { title:'Paper trade first',
+        desc:'Use Webull Paper Trading (top right → switch to Paper Account) to test the strategy for 30+ trades before using real money.' },
+    ]
+  },
+  moomoo: {
+    label: 'Moomoo',
+    steps: (s) => [
+      { title:'Moomoo is for stocks, ETFs & options',
+        desc:`${s.name} is best applied to US stocks and ETFs on Moomoo. Recommended instruments: QQQ, SPY, and individual Nasdaq/NYSE stocks.` },
+      { title:'Open a chart and add indicators',
+        desc:'Moomoo → Charts → tap the indicator icon (f(x)). Add: EMA 21, EMA 50, ADX(14), and RSI(14). These are your regime and entry filters.',
+        code:'EMA(21) | EMA(50) | ADX(14) | RSI(14)' },
+      { title:`Identify ${s.name} conditions`,
+        desc:s.variants[0].desc },
+      { title:'Use Hot Keys for fast entry',
+        desc:'In Moomoo settings, configure hotkeys for Buy/Sell. Use "Conditional Orders" → set a limit entry with an automatic stop-loss distance based on ATR.' },
+      { title:'Set daily loss limit',
+        desc:'Account → Risk Settings → Daily Loss Limit → set to 3% of your account balance. Moomoo will block new orders once this limit is hit.' },
+    ]
+  },
+  rh: {
+    label: 'Robinhood',
+    steps: (s) => [
+      { title:'Robinhood is stocks and options only — no Forex or Futures',
+        desc:`Apply ${s.name} to US stocks and ETFs. This is a manual-only setup — Robinhood does not support custom indicators or automated strategies. Best pairs: SPY, QQQ, AAPL, TSLA.` },
+      { title:'Use TradingView for signals, Robinhood for execution',
+        desc:'Open the TradingView chart with the Pine Script from the TradingView tab. Watch for entry signals there, then manually execute in Robinhood.' },
+      { title:'Check the signal on TradingView',
+        desc:`Set a TradingView alert on your ${s.name} script. When triggered, open Robinhood immediately to enter the trade.` },
+      { title:'Place a market or limit order in Robinhood',
+        desc:'Tap the stock → Buy → choose Limit Order. Set your limit price near the current ask. Immediately go to Positions → set a Stop Loss order.' },
+      { title:'Robinhood stop-loss workaround',
+        desc:'Robinhood does not support bracket orders. After entering, immediately place a separate Sell Stop order at your stop-loss price (close - ATR × 1.5).' },
+      { title:'Size for 1% risk',
+        desc:'Shares = (Account × 0.01) ÷ (Entry Price − Stop Price). Example: $10,000 account, $2 stop = 50 shares max.' },
+    ]
+  }
+};
+
+// ═══════════════════════════════════════════════════
+// MODAL LOGIC
+// ═══════════════════════════════════════════════════
+let currentStrat = null;
+let currentVariant = 0;
+let currentPlatform = 'tv';
+
+function openModal(stratId) {
+  currentStrat = stratId;
+  currentVariant = 0;
+  currentPlatform = 'tv';
+  renderModal();
+  document.getElementById('modalOverlay').classList.add('open');
+  document.getElementById('modalPanel').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.getElementById('modalPanel').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
+
+function renderModal() {
+  const s = STRATS[currentStrat];
+  const v = s.variants[currentVariant];
+
+  // Header
+  document.getElementById('modalRegimeBadge').innerHTML = s.regime;
+  document.getElementById('modalRegimeBadge').style.cssText = `background:${s.regimeBg};border:1px solid ${s.regimeBorder};color:${s.regimeColor}`;
+  document.getElementById('modalTitle').textContent = s.name;
+  document.getElementById('modalTitle').style.color = s.regimeColor;
+  document.getElementById('modalSub').textContent = v.tagline;
+
+  // Variants
+  const vwrap = document.getElementById('modalVariants');
+  vwrap.innerHTML = '<span class="variants-label">VARIANTS</span>' +
+    s.variants.map((vv,i) =>
+      `<div class="vpill${i===currentVariant?' active':''}" onclick="selectVariant(${i})">${vv.name}</div>`
+    ).join('');
+
+  // Description + instruments
+  document.getElementById('modalDesc').textContent = v.desc;
+  document.getElementById('modalInstruments').innerHTML =
+    v.instruments.map(ins => `<span class="chip blue">${ins}</span>`).join('');
+  document.getElementById('modalSession').innerHTML =
+    `<span class="chip green">${v.session}</span>`;
+
+  // Platform tabs
+  const tabBar = document.getElementById('modalPtabBar');
+  tabBar.innerHTML = PLATFORMS.map(p =>
+    `<div class="ptab${p.type==='manual'?' manual':''}${p.id===currentPlatform?' active':''}" onclick="selectPlatform('${p.id}')">${p.label}</div>`
+  ).join('');
+
+  renderPlatformContent();
+}
+
+function selectVariant(i) {
+  currentVariant = i;
+  renderModal();
+}
+
+function selectPlatform(pid) {
+  currentPlatform = pid;
+  // update tab active state
+  document.querySelectorAll('.ptab').forEach((t,i) => {
+    const p = PLATFORMS[i];
+    t.className = 'ptab' + (p.type==='manual'?' manual':'') + (p.id===pid?' active':'');
+  });
+  renderPlatformContent();
+}
+
+function renderPlatformContent() {
+  const s = STRATS[currentStrat];
+  const platform = PLATFORMS.find(p => p.id === currentPlatform);
+  const content = document.getElementById('modalPcontent');
+
+  if(platform.type === 'code') {
+    const code = s.code[currentPlatform];
+    const langLabel = {tv:'Pine Script v5 · TradingView',mt5:'MQL5 · MetaTrader 5',ninja:'NinjaScript · NinjaTrader 8',ts:'EasyLanguage · TradeStation'}[currentPlatform];
+    content.innerHTML = `
+      <div class="ptype-badge code"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>${langLabel}</div>
+      <div class="code-wrap">
+        <button class="copy-btn" onclick="copyCode(this)" data-code="${encodeURIComponent(code)}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>COPY
+        </button>
+        <pre class="code-blk">${escHtml(code)}</pre>
+      </div>
+      <div class="modal-platform-note">
+        <strong>HOW TO USE:</strong> ${getCodeNote(currentPlatform)}
+      </div>`;
+  } else {
+    const mp = MANUAL_PLATFORMS[currentPlatform];
+    const steps = mp.steps(s);
+    content.innerHTML = `
+      <div class="ptype-badge manual"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>MANUAL SETUP — ${mp.label}</div>
+      <div class="manual-steps">
+        ${steps.map((st,i) => `
+          <div class="mstep">
+            <div class="mstep-num">${String(i+1).padStart(2,'0')}</div>
+            <div class="mstep-body">
+              <div class="mstep-title">${st.title}</div>
+              <div class="mstep-desc">${st.desc}</div>
+              ${st.code ? `<div class="mstep-code">${escHtml(st.code)}</div>` : ''}
+            </div>
+          </div>`).join('')}
+      </div>`;
+  }
+}
+
+function getCodeNote(pid) {
+  return {
+    tv: 'In TradingView → Pine Editor → paste code → Add to chart. Go to Strategy Tester to backtest. Set alerts for live signals.',
+    mt5: 'In MetaEditor → File → New → Expert Advisor → paste code → Compile (F7). Drag EA onto chart, enable Auto Trading.',
+    ninja: 'NinjaTrader 8 → New → Strategy → paste → Compile. Strategy Analyzer for backtest. Enable in Strategies window for live.',
+    ts: 'TradeStation → Insert → New Strategy → paste → Verify → Format Strategy. Add to chart via Format → Strategies.',
+  }[pid] || '';
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function copyCode(btn) {
+  const code = decodeURIComponent(btn.dataset.code);
+  navigator.clipboard.writeText(code).then(() => {
+    btn.classList.add('copied');
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>COPIED!';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>COPY';
+    }, 2000);
+  });
+}
 </script>
 </body>
 </html>
