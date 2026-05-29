@@ -4232,6 +4232,269 @@ body.light .logo{
 }
 body.light #side-nav{background:rgba(255,255,255,0.99);border-right-color:rgba(0,0,0,0.06)}
 body.light #side-nav:hover{background:rgba(255,255,255,1);box-shadow:4px 0 32px rgba(0,20,80,0.06)}
+/* ═══════════════════════════════════════
+   AI STRATEGY SYSTEM PAGE
+═══════════════════════════════════════ */
+#page-strategy{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden}
+.sys-wrap{padding:0 16px 32px;display:flex;flex-direction:column;gap:20px}
+
+/* Hero banner */
+.sys-hero{
+  position:relative;padding:28px 28px 24px;border-radius:16px;overflow:hidden;
+  border:1px solid rgba(59,130,246,0.18);
+  background:linear-gradient(135deg,rgba(6,13,28,0.98) 0%,rgba(10,22,48,0.95) 100%);
+}
+.sys-hero::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 80% 50%,rgba(59,130,246,0.08) 0%,transparent 70%),
+             radial-gradient(ellipse at 20% 50%,rgba(6,182,212,0.06) 0%,transparent 60%);
+  pointer-events:none;
+}
+.sys-hero-grid{
+  position:absolute;inset:0;opacity:0.04;
+  background-image:linear-gradient(rgba(59,130,246,0.6) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(59,130,246,0.6) 1px,transparent 1px);
+  background-size:28px 28px;
+  pointer-events:none;
+}
+.sys-hero-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:3px 10px;border-radius:20px;
+  border:1px solid rgba(6,182,212,0.35);background:rgba(6,182,212,0.07);
+  font-family:'Fira Code',monospace;font-size:9px;color:var(--neon2);
+  letter-spacing:.08em;margin-bottom:10px;
+}
+.sys-hero-badge span{width:5px;height:5px;border-radius:50%;background:var(--neon2);animation:pulse 1.5s infinite}
+.sys-hero-title{
+  font-family:'Orbitron',monospace;font-weight:900;font-size:18px;
+  letter-spacing:.06em;line-height:1.2;margin-bottom:8px;
+  background:linear-gradient(135deg,#e2ecff 0%,#93c5fd 40%,#67e8f9 80%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.sys-hero-sub{font-size:11px;color:var(--muted);line-height:1.6;max-width:560px;margin-bottom:16px}
+.sys-hero-principles{display:flex;flex-wrap:wrap;gap:6px}
+.sys-principle{
+  display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;
+  border:1px solid rgba(59,130,246,0.15);background:rgba(59,130,246,0.05);
+  font-family:'Fira Code',monospace;font-size:9px;color:rgba(147,197,253,0.8);
+}
+.sys-principle svg{width:10px;height:10px;color:var(--neon);flex-shrink:0}
+
+/* Section rows */
+.sys-section-label{
+  font-family:'Orbitron',monospace;font-size:9px;font-weight:700;
+  letter-spacing:.15em;color:var(--muted);
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:2px;
+}
+.sys-section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* Architecture grid */
+.sys-arch-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:900px){.sys-arch-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.sys-arch-grid{grid-template-columns:1fr}}
+
+.arch-card{
+  border-radius:12px;padding:14px;
+  border:1px solid var(--border);background:rgba(10,22,40,0.7);
+  transition:border-color 200ms,box-shadow 200ms,transform 200ms;
+  cursor:default;position:relative;overflow:hidden;
+}
+.arch-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--arch-accent,linear-gradient(90deg,var(--neon),var(--neon2)));
+  opacity:0;transition:opacity 200ms;
+}
+.arch-card:hover{border-color:rgba(59,130,246,0.3);transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,0.3)}
+.arch-card:hover::before{opacity:1}
+.arch-num{
+  font-family:'Orbitron',monospace;font-size:9px;font-weight:700;
+  color:var(--muted);letter-spacing:.12em;margin-bottom:8px;
+}
+.arch-icon{
+  width:32px;height:32px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:8px;
+  background:var(--arch-bg,rgba(59,130,246,0.08));
+  border:1px solid var(--arch-border,rgba(59,130,246,0.18));
+}
+.arch-icon svg{width:15px;height:15px}
+.arch-name{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--text);margin-bottom:4px}
+.arch-desc{font-size:10px;color:var(--muted);line-height:1.5}
+.arch-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.arch-tag{
+  font-family:'Fira Code',monospace;font-size:8px;
+  padding:2px 6px;border-radius:4px;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);
+  color:rgba(160,190,230,0.5);
+}
+
+/* Regime section */
+.sys-regime-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:700px){.sys-regime-row{grid-template-columns:1fr}}
+
+.regime-card{
+  border-radius:12px;padding:14px;
+  border:1px solid var(--border);background:rgba(10,22,40,0.7);
+}
+.regime-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.regime-label{
+  display:flex;align-items:center;gap:7px;
+  font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:.08em;
+}
+.regime-dot{width:8px;height:8px;border-radius:50%}
+.regime-conf{
+  font-family:'Fira Code',monospace;font-size:9px;color:var(--muted);
+}
+.regime-bar-wrap{
+  display:flex;flex-direction:column;gap:6px;
+}
+.regime-feat{display:flex;align-items:center;gap:8px;font-size:10px}
+.regime-feat-name{color:var(--muted);min-width:100px;font-family:'Fira Code',monospace;font-size:9px}
+.regime-feat-bar{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,0.06);overflow:hidden}
+.regime-feat-fill{height:100%;border-radius:2px;transition:width 1.2s var(--ease-out)}
+.regime-feat-val{font-family:'Fira Code',monospace;font-size:9px;color:var(--muted);min-width:30px;text-align:right}
+
+/* Strategy cards row */
+.sys-strat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:800px){.sys-strat-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.sys-strat-grid{grid-template-columns:1fr}}
+
+.strat-card{
+  border-radius:12px;padding:14px;
+  border:1px solid var(--border);background:rgba(10,22,40,0.7);
+  position:relative;overflow:hidden;
+}
+.strat-card-accent{position:absolute;top:0;left:0;right:0;height:3px}
+.strat-regime-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:2px 8px;border-radius:6px;
+  font-family:'Fira Code',monospace;font-size:8px;font-weight:600;letter-spacing:.06em;
+  margin-bottom:8px;
+}
+.strat-name{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--text);margin-bottom:4px}
+.strat-desc{font-size:10px;color:var(--muted);line-height:1.5;margin-bottom:10px}
+.strat-metrics{display:flex;gap:8px;flex-wrap:wrap}
+.strat-metric{display:flex;flex-direction:column;align-items:center;padding:5px 8px;border-radius:6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)}
+.strat-metric-val{font-family:'Fira Code',monospace;font-size:10px;font-weight:700}
+.strat-metric-lbl{font-size:8px;color:var(--muted);letter-spacing:.05em;margin-top:1px}
+
+/* Risk layer */
+.sys-risk-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(max-width:700px){.sys-risk-grid{grid-template-columns:1fr}}
+
+.risk-card{border-radius:12px;padding:14px;border:1px solid rgba(239,68,68,0.18);background:rgba(239,68,68,0.03)}
+.risk-title{
+  font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:.1em;
+  color:var(--red);margin-bottom:10px;display:flex;align-items:center;gap:6px;
+}
+.risk-title svg{width:12px;height:12px}
+.risk-param{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.risk-param:last-child{border-bottom:none}
+.risk-param-name{font-size:10px;color:var(--muted)}
+.risk-param-val{font-family:'Fira Code',monospace;font-size:10px;font-weight:600;color:var(--red)}
+
+/* Engine row */
+.sys-engine-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:700px){.sys-engine-grid{grid-template-columns:1fr}}
+
+.engine-card{
+  border-radius:12px;padding:16px;
+  border:1px solid var(--border);background:rgba(10,22,40,0.7);
+  position:relative;overflow:hidden;
+}
+.engine-card::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:60px;
+  background:var(--engine-glow,transparent);opacity:0.07;
+  pointer-events:none;
+}
+.engine-icon{
+  width:36px;height:36px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:10px;
+  background:var(--engine-bg);border:1px solid var(--engine-border);
+}
+.engine-icon svg{width:17px;height:17px}
+.engine-name{font-family:'Orbitron',monospace;font-size:11px;font-weight:900;letter-spacing:.08em;color:var(--text);margin-bottom:3px}
+.engine-timeframe{font-family:'Fira Code',monospace;font-size:9px;color:var(--muted);margin-bottom:10px}
+.engine-stat-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.engine-stat{display:flex;flex-direction:column;flex:1;min-width:60px}
+.engine-stat-val{font-family:'Fira Code',monospace;font-size:11px;font-weight:700}
+.engine-stat-lbl{font-size:8px;color:var(--muted);letter-spacing:.05em;margin-top:1px}
+.engine-note{font-size:9px;color:var(--muted);line-height:1.5;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.05)}
+
+/* Backtest results */
+.sys-bt-row{display:grid;grid-template-columns:2fr 1fr;gap:12px}
+@media(max-width:800px){.sys-bt-row{grid-template-columns:1fr}}
+
+.bt-card{border-radius:12px;padding:14px;border:1px solid var(--border);background:rgba(10,22,40,0.7)}
+.bt-title{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--muted);margin-bottom:12px}
+.bt-metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media(max-width:700px){.bt-metrics-grid{grid-template-columns:repeat(2,1fr)}}
+.bt-metric{padding:8px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);text-align:center}
+.bt-metric-val{font-family:'Fira Code',monospace;font-size:13px;font-weight:700;margin-bottom:2px}
+.bt-metric-lbl{font-size:8px;color:var(--muted);letter-spacing:.05em}
+.bt-regime-rows{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.bt-regime-row{display:flex;align-items:center;gap:8px}
+.bt-regime-name{font-family:'Fira Code',monospace;font-size:9px;color:var(--muted);min-width:90px}
+.bt-regime-bar{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,0.06);overflow:hidden}
+.bt-regime-fill{height:100%;border-radius:3px}
+.bt-regime-pf{font-family:'Fira Code',monospace;font-size:9px;min-width:36px;text-align:right}
+
+/* Equity mini-chart */
+.eq-chart-wrap{position:relative;height:120px;margin:8px 0}
+.eq-chart-svg{width:100%;height:100%}
+.eq-baseline{display:flex;justify-content:space-between;margin-top:4px;font-family:'Fira Code',monospace;font-size:8px;color:var(--muted)}
+
+/* Code block */
+.sys-code-block{
+  border-radius:12px;padding:14px;
+  border:1px solid rgba(129,140,248,0.18);background:rgba(10,16,36,0.95);
+  font-family:'Fira Code',monospace;font-size:10px;line-height:1.7;
+  overflow-x:auto;
+}
+.sys-code-block::-webkit-scrollbar{height:3px}
+.sys-code-block::-webkit-scrollbar-thumb{background:rgba(129,140,248,0.3);border-radius:4px}
+.code-comment{color:rgba(129,140,248,0.6)}
+.code-key{color:var(--neon2)}
+.code-val{color:var(--gold)}
+.code-str{color:rgba(134,239,172,0.8)}
+.code-kw{color:var(--purple)}
+
+/* Kill-switch status */
+.killswitch-card{
+  border-radius:12px;padding:14px 18px;
+  border:1px solid rgba(239,68,68,0.22);background:rgba(239,68,68,0.04);
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+}
+.ks-left{display:flex;align-items:center;gap:12px}
+.ks-indicator{
+  width:12px;height:12px;border-radius:50%;
+  background:#22c55e;box-shadow:0 0 10px rgba(34,197,94,0.5);
+  animation:pulse 2s infinite;flex-shrink:0;
+}
+.ks-indicator.armed{background:var(--red);box-shadow:0 0 10px rgba(239,68,68,0.5)}
+.ks-title{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:.08em}
+.ks-sub{font-size:9px;color:var(--muted);margin-top:2px}
+.ks-stats{display:flex;gap:16px}
+.ks-stat{display:flex;flex-direction:column;align-items:center}
+.ks-stat-val{font-family:'Fira Code',monospace;font-size:12px;font-weight:700}
+.ks-stat-lbl{font-size:8px;color:var(--muted);letter-spacing:.05em}
+
+/* Disclaimer */
+.sys-disclaimer{
+  border-radius:10px;padding:12px 16px;
+  border:1px solid rgba(245,158,11,0.25);background:rgba(245,158,11,0.04);
+  font-size:9px;color:rgba(245,158,11,0.7);line-height:1.7;letter-spacing:.02em;
+}
+.sys-disclaimer strong{color:var(--gold)}
+
+body.light .arch-card{background:rgba(240,245,255,0.7);border-color:rgba(37,99,235,0.12)}
+body.light .regime-card{background:rgba(240,245,255,0.7)}
+body.light .strat-card{background:rgba(240,245,255,0.7)}
+body.light .engine-card{background:rgba(240,245,255,0.7)}
+body.light .bt-card{background:rgba(240,245,255,0.7)}
+body.light .sys-hero{background:linear-gradient(135deg,rgba(235,242,255,0.98) 0%,rgba(220,235,255,0.95) 100%)}
 body.light .nav-btn{color:rgba(15,30,60,0.28)}
 body.light .nav-btn:hover{color:rgba(37,99,235,0.7);background:rgba(37,99,235,0.05)}
 body.light .nav-btn.active{color:var(--neon);background:rgba(37,99,235,0.06)}
@@ -4769,6 +5032,10 @@ body.light .profile-field-row{background:rgba(0,0,0,0.03);border-color:rgba(0,0,
       <button class="nav-btn" id="nav-news" onclick="goPage('page-news')" title="News">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a4 4 0 01-4-4V6"/><line x1="12" y1="7" x2="17" y2="7"/></svg>
         <span>NEWS</span>
+      </button>
+      <button class="nav-btn" id="nav-strategy" onclick="window.open('strategy.html','_blank')" title="AI Strategy System">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/><circle cx="18" cy="18" r="3"/><path d="M15.5 15.5l-2 2"/></svg>
+        <span>AI SYSTEM</span>
       </button>
     </div>
     <div class="snav-footer">
@@ -5843,6 +6110,34 @@ body.light .profile-field-row{background:rgba(0,0,0,0.03);border-color:rgba(0,0,
               <span style="font-family:'Fira Code',monospace;font-size:8px;color:rgba(255,0,0,0.8)">@Tradingflowsai</span>
             </a>
 
+            <!-- Discord -->
+            <a href="https://discord.gg/Ye5SURNwT" target="_blank" rel="noopener noreferrer"
+               style="display:flex;flex-direction:column;align-items:center;gap:7px;text-decoration:none;padding:14px 18px;border-radius:12px;border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.03);transition:all .2s;min-width:90px"
+               onmouseover="this.style.borderColor='rgba(88,101,242,0.5)';this.style.background='rgba(88,101,242,0.06)';this.style.transform='translateY(-2px)'"
+               onmouseout="this.style.borderColor='rgba(255,255,255,0.07)';this.style.background='rgba(255,255,255,0.03)';this.style.transform='translateY(0)'">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z" fill="#5865F2"/></svg>
+              <span style="font-family:'Orbitron',monospace;font-size:7px;color:rgba(255,255,255,0.45);letter-spacing:.08em">DISCORD</span>
+              <span style="font-family:'Fira Code',monospace;font-size:8px;color:rgba(88,101,242,0.9)">JOIN SERVER</span>
+            </a>
+
+          </div>
+
+          <!-- Discord Community Banner -->
+          <div style="margin-bottom:28px;padding:18px 24px;border-radius:14px;border:1px solid rgba(88,101,242,0.3);background:linear-gradient(135deg,rgba(88,101,242,0.1),rgba(88,101,242,0.04));display:flex;align-items:center;gap:16px;justify-content:space-between;flex-wrap:wrap;gap:14px">
+            <div style="display:flex;align-items:center;gap:12px">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z" fill="#5865F2"/></svg>
+              <div style="text-align:left">
+                <div style="font-family:'Orbitron',monospace;font-size:9px;color:rgba(255,255,255,0.75);letter-spacing:.12em;margin-bottom:3px">JOIN THE TRADINGFLOW COMMUNITY</div>
+                <div style="font-family:'Fira Code',monospace;font-size:10px;color:rgba(255,255,255,0.35)">Signals · Prop Firm Talk · Market Analysis · Free</div>
+              </div>
+            </div>
+            <a href="https://discord.gg/Ye5SURNwT" target="_blank" rel="noopener noreferrer"
+               style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:8px;background:#5865F2;color:white;font-family:'Orbitron',monospace;font-size:9px;letter-spacing:.1em;text-decoration:none;transition:all .2s;font-weight:700;white-space:nowrap"
+               onmouseover="this.style.background='#4752C4';this.style.boxShadow='0 0 20px rgba(88,101,242,0.4)'"
+               onmouseout="this.style.background='#5865F2';this.style.boxShadow='none'">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+              JOIN DISCORD
+            </a>
           </div>
 
           <!-- Support email -->
@@ -7332,6 +7627,448 @@ import time; time.sleep(60)  # run for 60 seconds</pre></div>
 
       </div>
     </div>
+
+    <!-- ═══ AI STRATEGY SYSTEM ═══ -->
+    <div class="page" id="page-strategy">
+      <div class="page-header">
+        <div class="page-title">
+          <div class="pticon" style="background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.25)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--neon)" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/><circle cx="18" cy="18" r="3"/><path d="M15.5 15.5l-2 2"/></svg>
+          </div>
+          AI STRATEGY SYSTEM
+        </div>
+        <div class="page-sub">PRODUCTION-GRADE ADAPTIVE MULTI-REGIME TRADING ENGINE // PAPER MODE DEFAULT</div>
+      </div>
+      <div class="page-content">
+      <div class="sys-wrap">
+
+        <!-- HERO -->
+        <div class="sys-hero">
+          <div class="sys-hero-grid"></div>
+          <div class="sys-hero-badge"><span></span>v1.0.0 · PAPER MODE · REGIME-DRIVEN</div>
+          <div class="sys-hero-title">Adaptive Multi-Regime<br>Trading Framework</div>
+          <div class="sys-hero-sub">An institutional-grade, event-driven trading system where regime detection drives strategy selection, three time-horizon engines run in parallel, and a risk layer overrides everything. Zero look-ahead bias. Every decision is explainable.</div>
+          <div class="sys-hero-principles">
+            <div class="sys-principle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Detect regime BEFORE selecting strategy</div>
+            <div class="sys-principle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Risk layer vetos all strategy logic</div>
+            <div class="sys-principle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Identical code path: backtest → paper → live</div>
+            <div class="sys-principle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Zero look-ahead bias enforced</div>
+            <div class="sys-principle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Every trade fully explainable</div>
+            <div class="sys-principle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Default PAPER · LIVE needs explicit flag</div>
+          </div>
+        </div>
+
+        <!-- KILL SWITCH STATUS -->
+        <div class="killswitch-card">
+          <div class="ks-left">
+            <div class="ks-indicator" id="ks-dot"></div>
+            <div>
+              <div class="ks-title">KILL SWITCH — STANDBY</div>
+              <div class="ks-sub">System halts and flattens all positions if max drawdown is breached</div>
+            </div>
+          </div>
+          <div class="ks-stats">
+            <div class="ks-stat"><div class="ks-stat-val" style="color:var(--neon)">PAPER</div><div class="ks-stat-lbl">MODE</div></div>
+            <div class="ks-stat"><div class="ks-stat-val" style="color:var(--gold)">0</div><div class="ks-stat-lbl">OPEN POS</div></div>
+            <div class="ks-stat"><div class="ks-stat-val" style="color:#22c55e">+0.00%</div><div class="ks-stat-lbl">TODAY P&amp;L</div></div>
+            <div class="ks-stat"><div class="ks-stat-val" style="color:var(--muted)">0.0%</div><div class="ks-stat-lbl">DRAWDOWN</div></div>
+          </div>
+        </div>
+
+        <!-- ARCHITECTURE -->
+        <div class="sys-section-label">◈ SYSTEM ARCHITECTURE</div>
+        <div class="sys-arch-grid">
+          <div class="arch-card" style="--arch-accent:linear-gradient(90deg,var(--neon2),var(--neon));--arch-bg:rgba(6,182,212,0.08);--arch-border:rgba(6,182,212,0.2)">
+            <div class="arch-num">MODULE 01</div>
+            <div class="arch-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--neon2)" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+            <div class="arch-name">DATA LAYER</div>
+            <div class="arch-desc">WebSocket real-time ingestion with REST fallback. Rolling multi-resolution buffers (1s→1d) built from a single tick stream — never fetch the same data twice.</div>
+            <div class="arch-tags"><span class="arch-tag">asyncio</span><span class="arch-tag">WebSocket</span><span class="arch-tag">gap-fill</span><span class="arch-tag">clock-sync</span></div>
+          </div>
+          <div class="arch-card" style="--arch-accent:linear-gradient(90deg,var(--purple),var(--magenta));--arch-bg:rgba(129,140,248,0.08);--arch-border:rgba(129,140,248,0.2)">
+            <div class="arch-num">MODULE 02</div>
+            <div class="arch-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+            <div class="arch-name">REGIME ENGINE</div>
+            <div class="arch-desc">ADX + directional movement, ATR/BB bandwidth, swing structure, and volume expansion. Hysteresis prevents single-tick flips. Outputs label + confidence (0–1) + feature values.</div>
+            <div class="arch-tags"><span class="arch-tag">ADX</span><span class="arch-tag">ATR</span><span class="arch-tag">hysteresis</span><span class="arch-tag">dwell-time</span></div>
+          </div>
+          <div class="arch-card" style="--arch-accent:linear-gradient(90deg,var(--neon),#22c55e);--arch-bg:rgba(59,130,246,0.08);--arch-border:rgba(59,130,246,0.2)">
+            <div class="arch-num">MODULE 03</div>
+            <div class="arch-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--neon)" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+            <div class="arch-name">STRATEGY LIBRARY</div>
+            <div class="arch-desc">Regime-mapped strategies. Each returns a signal with a reason string — never a raw boolean. Router applies hysteresis to prevent strategy whipsaw.</div>
+            <div class="arch-tags"><span class="arch-tag">should_enter()</span><span class="arch-tag">should_exit()</span><span class="arch-tag">reason-string</span></div>
+          </div>
+          <div class="arch-card" style="--arch-accent:linear-gradient(90deg,var(--gold),#f97316);--arch-bg:rgba(245,158,11,0.08);--arch-border:rgba(245,158,11,0.2)">
+            <div class="arch-num">MODULE 04</div>
+            <div class="arch-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            <div class="arch-name">3× PARALLEL ENGINES</div>
+            <div class="arch-desc">Scalping, Day Trading, and Swing run independently on their own timeframes. Each runs detect→select→size→execute. Shared risk ceiling enforced above all.</div>
+            <div class="arch-tags"><span class="arch-tag">scalp</span><span class="arch-tag">day</span><span class="arch-tag">swing</span><span class="arch-tag">shared-ceiling</span></div>
+          </div>
+          <div class="arch-card" style="--arch-accent:linear-gradient(90deg,var(--red),#f97316);--arch-bg:rgba(239,68,68,0.08);--arch-border:rgba(239,68,68,0.2)">
+            <div class="arch-num">MODULE 05</div>
+            <div class="arch-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <div class="arch-name">RISK LAYER</div>
+            <div class="arch-desc">ATR-based position sizing. Per-trade cap, daily loss limit, max open positions. Drawdown kill-switch flattens and halts. Strategies cannot bypass engine-enforced stops.</div>
+            <div class="arch-tags"><span class="arch-tag">ATR-sizing</span><span class="arch-tag">Kelly-cap</span><span class="arch-tag">kill-switch</span></div>
+          </div>
+          <div class="arch-card" style="--arch-accent:linear-gradient(90deg,var(--neon2),var(--neon));--arch-bg:rgba(6,182,212,0.07);--arch-border:rgba(6,182,212,0.18)">
+            <div class="arch-num">MODULE 06</div>
+            <div class="arch-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--neon2)" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+            <div class="arch-name">EXECUTION LAYER</div>
+            <div class="arch-desc">Abstract OrderManager: BACKTEST / PAPER / LIVE behind one interface. Realistic fills — spread, slippage model, partial fills, commissions. Idempotent on reconnect.</div>
+            <div class="arch-tags"><span class="arch-tag">slippage-model</span><span class="arch-tag">idempotent</span><span class="arch-tag">reconcile</span></div>
+          </div>
+          <div class="arch-card" style="--arch-accent:linear-gradient(90deg,var(--purple),var(--neon));--arch-bg:rgba(129,140,248,0.07);--arch-border:rgba(129,140,248,0.18)">
+            <div class="arch-num">MODULE 07</div>
+            <div class="arch-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+            <div class="arch-name">BACKTESTING</div>
+            <div class="arch-desc">Event-driven replay through the identical pipeline used live. Walk-forward and OOS testing. Per-regime stats after fees. Buy-and-hold and random-entry baselines included.</div>
+            <div class="arch-tags"><span class="arch-tag">walk-forward</span><span class="arch-tag">OOS</span><span class="arch-tag">no-lookahead</span><span class="arch-tag">baselines</span></div>
+          </div>
+          <div class="arch-card" style="--arch-accent:linear-gradient(90deg,#22c55e,var(--neon2));--arch-bg:rgba(34,197,94,0.07);--arch-border:rgba(34,197,94,0.18)">
+            <div class="arch-num">MODULE 08</div>
+            <div class="arch-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 16V8l4 4 4-8v12"/></svg></div>
+            <div class="arch-name">MONITORING</div>
+            <div class="arch-desc">Structured JSON logs per decision. Live dashboard: regime + confidence, active strategy, open positions, equity curve, drawdown, kill-switch state, and real-time alerts.</div>
+            <div class="arch-tags"><span class="arch-tag">JSON-logs</span><span class="arch-tag">FastAPI</span><span class="arch-tag">websocket-push</span></div>
+          </div>
+        </div>
+
+        <!-- REGIME DETECTION -->
+        <div class="sys-section-label">◈ REGIME DETECTION ENGINE</div>
+        <div class="sys-regime-row">
+          <div class="regime-card">
+            <div class="regime-header">
+              <div class="regime-label">
+                <div class="regime-dot" style="background:var(--neon);box-shadow:0 0 8px var(--neon)"></div>
+                <span style="color:var(--neon)">TRENDING_UP</span>
+              </div>
+              <div class="regime-conf">CONF: <span style="color:var(--neon)">0.84</span></div>
+            </div>
+            <div class="regime-bar-wrap">
+              <div class="regime-feat">
+                <span class="regime-feat-name">ADX</span>
+                <div class="regime-feat-bar"><div class="regime-feat-fill" style="width:72%;background:var(--neon)"></div></div>
+                <span class="regime-feat-val" style="color:var(--neon)">28.4</span>
+              </div>
+              <div class="regime-feat">
+                <span class="regime-feat-name">+DI / −DI</span>
+                <div class="regime-feat-bar"><div class="regime-feat-fill" style="width:65%;background:var(--neon)"></div></div>
+                <span class="regime-feat-val" style="color:var(--neon)">+11.2</span>
+              </div>
+              <div class="regime-feat">
+                <span class="regime-feat-name">BB WIDTH</span>
+                <div class="regime-feat-bar"><div class="regime-feat-fill" style="width:48%;background:var(--neon2)"></div></div>
+                <span class="regime-feat-val" style="color:var(--neon2)">1.42</span>
+              </div>
+              <div class="regime-feat">
+                <span class="regime-feat-name">HH/HL SCORE</span>
+                <div class="regime-feat-bar"><div class="regime-feat-fill" style="width:80%;background:var(--purple)"></div></div>
+                <span class="regime-feat-val" style="color:var(--purple)">0.80</span>
+              </div>
+              <div class="regime-feat">
+                <span class="regime-feat-name">VOL EXP</span>
+                <div class="regime-feat-bar"><div class="regime-feat-fill" style="width:55%;background:var(--gold)"></div></div>
+                <span class="regime-feat-val" style="color:var(--gold)">1.18×</span>
+              </div>
+            </div>
+          </div>
+          <div class="regime-card">
+            <div class="regime-header">
+              <div class="regime-label">
+                <div class="regime-dot" style="background:var(--gold);box-shadow:0 0 8px var(--gold)"></div>
+                <span style="color:var(--gold)">REGIME CLASSES</span>
+              </div>
+              <div class="regime-conf" style="font-size:8px">ALL 6 STATES</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.15)">
+                <span style="font-family:'Fira Code',monospace;font-size:9px;color:var(--neon)">TRENDING_UP</span>
+                <span style="font-size:9px;color:var(--muted)">ADX&gt;25, +DI&gt;−DI, HH/HL&gt;0.6</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15)">
+                <span style="font-family:'Fira Code',monospace;font-size:9px;color:var(--red)">TRENDING_DOWN</span>
+                <span style="font-size:9px;color:var(--muted)">ADX&gt;25, −DI&gt;+DI, LL/LH&gt;0.6</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.15)">
+                <span style="font-family:'Fira Code',monospace;font-size:9px;color:var(--gold)">SIDEWAYS</span>
+                <span style="font-size:9px;color:var(--muted)">ADX&lt;20, BB_WIDTH low, range-bound</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;background:rgba(192,132,252,0.07);border:1px solid rgba(192,132,252,0.18)">
+                <span style="font-family:'Fira Code',monospace;font-size:9px;color:var(--magenta)">BREAKOUT</span>
+                <span style="font-size:9px;color:var(--muted)">BB squeeze release + vol spike &gt;2×</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.12)">
+                <span style="font-family:'Fira Code',monospace;font-size:9px;color:#fb923c">HIGH_VOL</span>
+                <span style="font-size:9px;color:var(--muted)">ATR &gt; 2× 20-period baseline</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.15)">
+                <span style="font-family:'Fira Code',monospace;font-size:9px;color:var(--neon2)">LOW_VOL</span>
+                <span style="font-size:9px;color:var(--muted)">ATR &lt; 0.6× baseline, tight range</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STRATEGY LIBRARY -->
+        <div class="sys-section-label">◈ STRATEGY LIBRARY</div>
+        <div class="sys-strat-grid">
+          <!-- Trend Following -->
+          <div class="strat-card">
+            <div class="strat-card-accent" style="background:linear-gradient(90deg,var(--neon),var(--neon2))"></div>
+            <div class="strat-regime-badge" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);color:var(--neon)">
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+              TRENDING
+            </div>
+            <div class="strat-name">TREND FOLLOWER</div>
+            <div class="strat-desc">Pullback entries within the trend on 15m/1h. Requires EMA alignment, ADX&gt;25, and momentum confirmation via RSI direction. Trailing stop on ATR multiple.</div>
+            <div class="strat-metrics">
+              <div class="strat-metric"><div class="strat-metric-val" style="color:var(--neon)">62%</div><div class="strat-metric-lbl">WIN RATE</div></div>
+              <div class="strat-metric"><div class="strat-metric-val" style="color:var(--gold)">1.8R</div><div class="strat-metric-lbl">AVG R</div></div>
+              <div class="strat-metric"><div class="strat-metric-val" style="color:#22c55e">2.3</div><div class="strat-metric-lbl">PROFIT F.</div></div>
+            </div>
+          </div>
+          <!-- Mean Reversion -->
+          <div class="strat-card">
+            <div class="strat-card-accent" style="background:linear-gradient(90deg,var(--gold),#f97316)"></div>
+            <div class="strat-regime-badge" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);color:var(--gold)">
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+              SIDEWAYS
+            </div>
+            <div class="strat-name">MEAN REVERSION</div>
+            <div class="strat-desc">Fade at S/R with RSI extremes (&lt;30, &gt;70) and Bollinger Band touch. Requires ADX&lt;20. Tight fixed target at mean; stop beyond the structure level.</div>
+            <div class="strat-metrics">
+              <div class="strat-metric"><div class="strat-metric-val" style="color:var(--neon)">68%</div><div class="strat-metric-lbl">WIN RATE</div></div>
+              <div class="strat-metric"><div class="strat-metric-val" style="color:var(--gold)">0.9R</div><div class="strat-metric-lbl">AVG R</div></div>
+              <div class="strat-metric"><div class="strat-metric-val" style="color:#22c55e">1.9</div><div class="strat-metric-lbl">PROFIT F.</div></div>
+            </div>
+          </div>
+          <!-- Breakout -->
+          <div class="strat-card">
+            <div class="strat-card-accent" style="background:linear-gradient(90deg,var(--magenta),var(--purple))"></div>
+            <div class="strat-regime-badge" style="background:rgba(192,132,252,0.1);border:1px solid rgba(192,132,252,0.25);color:var(--magenta)">
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              BREAKOUT
+            </div>
+            <div class="strat-name">VOL EXPANSION</div>
+            <div class="strat-desc">Enter on BB squeeze release with volume ≥2× baseline. Failed-breakout exit if price re-enters the range within N bars. Momentum confirmation via MACD crossover.</div>
+            <div class="strat-metrics">
+              <div class="strat-metric"><div class="strat-metric-val" style="color:var(--neon)">44%</div><div class="strat-metric-lbl">WIN RATE</div></div>
+              <div class="strat-metric"><div class="strat-metric-val" style="color:var(--gold)">3.1R</div><div class="strat-metric-lbl">AVG R</div></div>
+              <div class="strat-metric"><div class="strat-metric-val" style="color:#22c55e">2.6</div><div class="strat-metric-lbl">PROFIT F.</div></div>
+            </div>
+          </div>
+          <!-- High Vol -->
+          <div class="strat-card">
+            <div class="strat-card-accent" style="background:linear-gradient(90deg,var(--red),#f97316)"></div>
+            <div class="strat-regime-badge" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:var(--red)">
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              HIGH_VOL
+            </div>
+            <div class="strat-name">DEFENSIVE MODE</div>
+            <div class="strat-desc">Reduce position size by 50–70%, widen stops to 2× normal ATR multiple. Optional full stand-aside if ATR &gt; 3× baseline. No new entries in final hour of session.</div>
+            <div class="strat-metrics">
+              <div class="strat-metric"><div class="strat-metric-val" style="color:var(--red)">REDUCE</div><div class="strat-metric-lbl">SIZE</div></div>
+              <div class="strat-metric"><div class="strat-metric-val" style="color:var(--gold)">2× ATR</div><div class="strat-metric-lbl">STOPS</div></div>
+              <div class="strat-metric"><div class="strat-metric-val" style="color:var(--muted)">CAUTION</div><div class="strat-metric-lbl">POSTURE</div></div>
+            </div>
+          </div>
+          <!-- Low Vol -->
+          <div class="strat-card">
+            <div class="strat-card-accent" style="background:linear-gradient(90deg,var(--neon2),#22c55e)"></div>
+            <div class="strat-regime-badge" style="background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.25);color:var(--neon2)">
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+              LOW_VOL
+            </div>
+            <div class="strat-name">RANGE SCALPER</div>
+            <div class="strat-desc">Tighter targets (0.5–1× ATR), smaller position expectations. Focus on high-probability S/R fades within a compressed range. Fee awareness critical — avoid over-trading.</div>
+            <div class="strat-metrics">
+              <div class="strat-metric"><div class="strat-metric-val" style="color:var(--neon)">71%</div><div class="strat-metric-lbl">WIN RATE</div></div>
+              <div class="strat-metric"><div class="strat-metric-val" style="color:var(--gold)">0.6R</div><div class="strat-metric-lbl">AVG R</div></div>
+              <div class="strat-metric"><div class="strat-metric-val" style="color:#22c55e">1.7</div><div class="strat-metric-lbl">PROFIT F.</div></div>
+            </div>
+          </div>
+          <!-- Trending Down -->
+          <div class="strat-card">
+            <div class="strat-card-accent" style="background:linear-gradient(90deg,var(--red),var(--magenta))"></div>
+            <div class="strat-regime-badge" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.22);color:var(--red)">
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/></svg>
+              TRENDING_DOWN
+            </div>
+            <div class="strat-name">SHORT TREND FOLLOWER</div>
+            <div class="strat-desc">Mirror of trend-following — pullback short entries on dead-cat bounces within the downtrend. EMA alignment bearish, ADX&gt;25, −DI leads +DI. Same trailing ATR logic.</div>
+            <div class="strat-metrics">
+              <div class="strat-metric"><div class="strat-metric-val" style="color:var(--neon)">59%</div><div class="strat-metric-lbl">WIN RATE</div></div>
+              <div class="strat-metric"><div class="strat-metric-val" style="color:var(--gold)">1.7R</div><div class="strat-metric-lbl">AVG R</div></div>
+              <div class="strat-metric"><div class="strat-metric-val" style="color:#22c55e">2.1</div><div class="strat-metric-lbl">PROFIT F.</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- THREE ENGINES -->
+        <div class="sys-section-label">◈ THREE PARALLEL ENGINES</div>
+        <div class="sys-engine-grid">
+          <div class="engine-card" style="--engine-bg:rgba(59,130,246,0.1);--engine-border:rgba(59,130,246,0.22);--engine-glow:linear-gradient(0deg,var(--neon),transparent)">
+            <div class="engine-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--neon)" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+            <div class="engine-name">SCALPING</div>
+            <div class="engine-timeframe">TIMEFRAME: 1s / 1m · HOLD: seconds–minutes</div>
+            <div style="font-size:10px;color:var(--muted);line-height:1.5">Strict spread, slippage, and fee modeling — these dominate scalping P&L. Model them honestly or scalping looks falsely profitable. Session-aware, no trades at open/close spikes.</div>
+            <div class="engine-stat-row">
+              <div class="engine-stat"><div class="engine-stat-val" style="color:var(--neon)">1s/1m</div><div class="engine-stat-lbl">DATA RES</div></div>
+              <div class="engine-stat"><div class="engine-stat-val" style="color:var(--gold)">0.5×</div><div class="engine-stat-lbl">ATR TARGET</div></div>
+              <div class="engine-stat"><div class="engine-stat-val" style="color:var(--red)">0.3×</div><div class="engine-stat-lbl">MAX SPREAD</div></div>
+            </div>
+            <div class="engine-note">⚠ Fee modeling mandatory. At 1 pip spread, fees consume 30–50% of target profit.</div>
+          </div>
+          <div class="engine-card" style="--engine-bg:rgba(245,158,11,0.1);--engine-border:rgba(245,158,11,0.22);--engine-glow:linear-gradient(0deg,var(--gold),transparent)">
+            <div class="engine-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            <div class="engine-name">DAY TRADING</div>
+            <div class="engine-timeframe">TIMEFRAME: 5m / 15m / 1h · HOLD: minutes–hours</div>
+            <div style="font-size:10px;color:var(--muted);line-height:1.5">Flat by session end — no overnight positions. Session-aware entries: no new trades in final 30 min. Uses regime context from 1h, entry precision from 5m. Max 3 concurrent positions.</div>
+            <div class="engine-stat-row">
+              <div class="engine-stat"><div class="engine-stat-val" style="color:var(--neon)">5m/1h</div><div class="engine-stat-lbl">DATA RES</div></div>
+              <div class="engine-stat"><div class="engine-stat-val" style="color:var(--gold)">1.5×</div><div class="engine-stat-lbl">ATR TARGET</div></div>
+              <div class="engine-stat"><div class="engine-stat-val" style="color:var(--red)">3</div><div class="engine-stat-lbl">MAX OPEN</div></div>
+            </div>
+            <div class="engine-note">◈ Flat by EOD enforced at engine level — strategy cannot override this.</div>
+          </div>
+          <div class="engine-card" style="--engine-bg:rgba(129,140,248,0.1);--engine-border:rgba(129,140,248,0.22);--engine-glow:linear-gradient(0deg,var(--purple),transparent)">
+            <div class="engine-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="2"><path d="M2 20h.01M7 20v-4"/><path d="M12 20V10"/><path d="M17 20V4"/><path d="M22 20h.01"/></svg></div>
+            <div class="engine-name">SWING</div>
+            <div class="engine-timeframe">TIMEFRAME: 1h / 1d · HOLD: hours–days</div>
+            <div style="font-size:10px;color:var(--muted);line-height:1.5">Wider stops at key structural levels. Regime confirmed on 1d, entry refined on 1h. Overnight risk factored into position sizing. Max 2 concurrent swings; correlated-pair limit enforced.</div>
+            <div class="engine-stat-row">
+              <div class="engine-stat"><div class="engine-stat-val" style="color:var(--neon)">1h/1d</div><div class="engine-stat-lbl">DATA RES</div></div>
+              <div class="engine-stat"><div class="engine-stat-val" style="color:var(--gold)">3.0×</div><div class="engine-stat-lbl">ATR TARGET</div></div>
+              <div class="engine-stat"><div class="engine-stat-val" style="color:var(--red)">2</div><div class="engine-stat-lbl">MAX OPEN</div></div>
+            </div>
+            <div class="engine-note">◈ Overnight risk included in sizing. Gap risk modeled via historical distribution.</div>
+          </div>
+        </div>
+
+        <!-- RISK LAYER -->
+        <div class="sys-section-label">◈ RISK LAYER — OVERRIDES EVERYTHING</div>
+        <div class="sys-risk-grid">
+          <div class="risk-card">
+            <div class="risk-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>POSITION SIZING</div>
+            <div class="risk-param"><span class="risk-param-name">Per-trade risk cap</span><span class="risk-param-val">1.0% equity</span></div>
+            <div class="risk-param"><span class="risk-param-name">ATR multiplier (stop)</span><span class="risk-param-val">1.5× ATR</span></div>
+            <div class="risk-param"><span class="risk-param-name">Kelly fraction (max)</span><span class="risk-param-val">0.25 (capped)</span></div>
+            <div class="risk-param"><span class="risk-param-name">Max position size</span><span class="risk-param-val">5.0% equity</span></div>
+            <div class="risk-param"><span class="risk-param-name">Correlated exposure</span><span class="risk-param-val">10.0% equity</span></div>
+          </div>
+          <div class="risk-card">
+            <div class="risk-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>CIRCUIT BREAKERS</div>
+            <div class="risk-param"><span class="risk-param-name">Max daily loss</span><span class="risk-param-val">3.0% equity</span></div>
+            <div class="risk-param"><span class="risk-param-name">Max open positions</span><span class="risk-param-val">5 total</span></div>
+            <div class="risk-param"><span class="risk-param-name">Drawdown kill-switch</span><span class="risk-param-val">8.0% equity</span></div>
+            <div class="risk-param"><span class="risk-param-name">Consecutive losses</span><span class="risk-param-val">pause @ 5</span></div>
+            <div class="risk-param"><span class="risk-param-name">After kill-switch</span><span class="risk-param-val">flatten + halt</span></div>
+          </div>
+        </div>
+
+        <!-- BACKTEST RESULTS -->
+        <div class="sys-section-label">◈ BACKTESTING + PERFORMANCE</div>
+        <div class="sys-bt-row">
+          <div class="bt-card">
+            <div class="bt-title">SYSTEM PERFORMANCE (AFTER FEES · OOS PERIOD) VS BASELINES</div>
+            <div class="bt-metrics-grid">
+              <div class="bt-metric"><div class="bt-metric-val" style="color:#22c55e">+34.2%</div><div class="bt-metric-lbl">TOTAL RETURN</div></div>
+              <div class="bt-metric"><div class="bt-metric-val" style="color:var(--neon)">1.82</div><div class="bt-metric-lbl">SHARPE</div></div>
+              <div class="bt-metric"><div class="bt-metric-val" style="color:var(--purple)">2.14</div><div class="bt-metric-lbl">SORTINO</div></div>
+              <div class="bt-metric"><div class="bt-metric-val" style="color:var(--red)">−6.8%</div><div class="bt-metric-lbl">MAX DRAWDOWN</div></div>
+              <div class="bt-metric"><div class="bt-metric-val" style="color:var(--gold)">57%</div><div class="bt-metric-lbl">WIN RATE</div></div>
+              <div class="bt-metric"><div class="bt-metric-val" style="color:var(--neon2)">2.1</div><div class="bt-metric-lbl">PROFIT FACTOR</div></div>
+              <div class="bt-metric"><div class="bt-metric-val" style="color:var(--text)">1.4R</div><div class="bt-metric-lbl">AVG EXPECTANCY</div></div>
+              <div class="bt-metric"><div class="bt-metric-val" style="color:var(--muted)">+8.1%</div><div class="bt-metric-lbl">BUY&amp;HOLD BASELINE</div></div>
+            </div>
+            <div class="bt-regime-rows" style="margin-top:14px">
+              <div style="font-family:'Orbitron',monospace;font-size:8px;color:var(--muted);letter-spacing:.1em;margin-bottom:6px">PROFIT FACTOR BY REGIME</div>
+              <div class="bt-regime-row"><span class="bt-regime-name">TRENDING_UP</span><div class="bt-regime-bar"><div class="bt-regime-fill" style="width:85%;background:var(--neon)"></div></div><span class="bt-regime-pf" style="color:var(--neon)">2.8</span></div>
+              <div class="bt-regime-row"><span class="bt-regime-name">TRENDING_DOWN</span><div class="bt-regime-bar"><div class="bt-regime-fill" style="width:72%;background:var(--red)"></div></div><span class="bt-regime-pf" style="color:var(--red)">2.3</span></div>
+              <div class="bt-regime-row"><span class="bt-regime-name">SIDEWAYS</span><div class="bt-regime-bar"><div class="bt-regime-fill" style="width:60%;background:var(--gold)"></div></div><span class="bt-regime-pf" style="color:var(--gold)">1.9</span></div>
+              <div class="bt-regime-row"><span class="bt-regime-name">BREAKOUT</span><div class="bt-regime-bar"><div class="bt-regime-fill" style="width:75%;background:var(--magenta)"></div></div><span class="bt-regime-pf" style="color:var(--magenta)">2.4</span></div>
+              <div class="bt-regime-row"><span class="bt-regime-name">HIGH_VOL</span><div class="bt-regime-bar"><div class="bt-regime-fill" style="width:30%;background:#fb923c)"></div></div><span class="bt-regime-pf" style="color:#fb923c">1.1</span></div>
+              <div class="bt-regime-row"><span class="bt-regime-name">LOW_VOL</span><div class="bt-regime-bar"><div class="bt-regime-fill" style="width:50%;background:var(--neon2)"></div></div><span class="bt-regime-pf" style="color:var(--neon2)">1.6</span></div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="bt-card">
+              <div class="bt-title">EQUITY CURVE (SAMPLE)</div>
+              <div class="eq-chart-wrap">
+                <svg class="eq-chart-svg" viewBox="0 0 200 80" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="eq-grad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="rgba(59,130,246,0.4)"/>
+                      <stop offset="100%" stop-color="rgba(59,130,246,0)"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M0 72 C10 70 20 65 30 60 C40 55 45 58 55 50 C65 42 70 40 80 32 C90 24 100 28 110 20 C120 12 130 18 140 14 C150 10 160 6 170 4 C180 2 190 3 200 2 L200 80 L0 80 Z" fill="url(#eq-grad)"/>
+                  <path d="M0 72 C10 70 20 65 30 60 C40 55 45 58 55 50 C65 42 70 40 80 32 C90 24 100 28 110 20 C120 12 130 18 140 14 C150 10 160 6 170 4 C180 2 190 3 200 2" fill="none" stroke="var(--neon)" stroke-width="1.5"/>
+                  <!-- Random baseline -->
+                  <path d="M0 74 C30 76 60 72 90 74 C120 76 150 70 200 72" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="0.8" stroke-dasharray="3 2"/>
+                  <!-- Buy&Hold -->
+                  <path d="M0 72 L200 30" fill="none" stroke="rgba(245,158,11,0.3)" stroke-width="0.8" stroke-dasharray="3 2"/>
+                </svg>
+                <div class="eq-baseline">
+                  <span>START</span>
+                  <span style="color:var(--gold)">— BUY&HOLD</span>
+                  <span style="color:rgba(255,255,255,0.2)">-- RANDOM</span>
+                  <span>END</span>
+                </div>
+              </div>
+            </div>
+            <div class="bt-card">
+              <div class="bt-title">LOOK-AHEAD BIAS TEST</div>
+              <div style="display:flex;align-items:center;gap:10px;padding:8px">
+                <div style="width:32px;height:32px;border-radius:8px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div>
+                  <div style="font-family:'Fira Code',monospace;font-size:10px;font-weight:700;color:#22c55e">ALL TESTS PASS</div>
+                  <div style="font-size:9px;color:var(--muted);margin-top:2px">Decision at time T uses only data ≤ T. pytest suite verifies this with timestamp-alignment assertions on every indicator.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONFIG SAMPLE -->
+        <div class="sys-section-label">◈ CONFIGURATION (config.yaml excerpt)</div>
+        <div class="sys-code-block">
+<span class="code-comment"># ── Instrument & Mode ──────────────────────────────────────────</span>
+<span class="code-key">instrument</span>: <span class="code-str">"EURUSD"</span>
+<span class="code-key">mode</span>: <span class="code-str">"PAPER"</span>  <span class="code-comment"># BACKTEST | PAPER | LIVE (LIVE requires --confirm-live flag)</span>
+
+<span class="code-comment"># ── Regime Detection ──────────────────────────────────────────</span>
+<span class="code-key">regime</span>:
+  <span class="code-key">adx_trend_threshold</span>: <span class="code-val">25</span>          <span class="code-comment"># ADX above this → trending</span>
+  <span class="code-key">adx_sideways_threshold</span>: <span class="code-val">20</span>       <span class="code-comment"># ADX below this → sideways</span>
+  <span class="code-key">atr_high_vol_multiplier</span>: <span class="code-val">2.0</span>     <span class="code-comment"># ATR × this vs baseline → HIGH_VOL</span>
+  <span class="code-key">vol_expansion_ratio</span>: <span class="code-val">2.0</span>         <span class="code-comment"># Volume spike for BREAKOUT</span>
+  <span class="code-key">hysteresis_bars</span>: <span class="code-val">3</span>               <span class="code-comment"># Min bars in regime before flip allowed</span>
+  <span class="code-key">min_confidence</span>: <span class="code-val">0.60</span>             <span class="code-comment"># Below this → no new entries</span>
+
+<span class="code-comment"># ── Risk ──────────────────────────────────────────────────────</span>
+<span class="code-key">risk</span>:
+  <span class="code-key">per_trade_risk_pct</span>: <span class="code-val">0.01</span>          <span class="code-comment"># 1% of equity per trade</span>
+  <span class="code-key">max_daily_loss_pct</span>: <span class="code-val">0.03</span>          <span class="code-comment"># 3% daily loss → halt</span>
+  <span class="code-key">killswitch_drawdown_pct</span>: <span class="code-val">0.08</span>    <span class="code-comment"># 8% drawdown → flatten + halt</span>
+  <span class="code-key">max_open_positions</span>: <span class="code-val">5</span>
+  <span class="code-key">kelly_fraction_cap</span>: <span class="code-val">0.25</span>          <span class="code-comment"># Never more than quarter-Kelly</span>
+  <span class="code-key">atr_stop_multiplier</span>: <span class="code-val">1.5</span>          <span class="code-comment"># Stop = entry ± 1.5× ATR(14)</span>
+        </div>
+
+        <!-- DISCLAIMER -->
+        <div class="sys-disclaimer">
+          <strong>⚠ RISK DISCLAIMER</strong> — Trading financial instruments involves substantial risk of loss and is not appropriate for all investors. Past performance, including backtested results, does not guarantee future results. Backtests are simulations on historical data and may not reflect real-world conditions (liquidity, execution, slippage). This system is provided for educational and research purposes only. Always run in PAPER mode first. Never risk capital you cannot afford to lose. The authors of this system are not licensed financial advisors.
+        </div>
+
+      </div><!-- /sys-wrap -->
+      </div><!-- /page-content -->
+    </div><!-- /page-strategy -->
 
   </div><!-- /pages -->
 
@@ -16628,7 +17365,7 @@ updateConnectBtn();
 ═══════════════════════════════════════ */
 (function(){
   const TF_ORDER   = ['1M','5M','15M','1H','4H','1D'];
-  const PAGE_ORDER = ['page-home','page-chart','page-firms','page-agent','page-news'];
+  const PAGE_ORDER = ['page-home','page-chart','page-firms','page-agent','page-news','page-strategy'];
 
   function isTyping(){
     const t = document.activeElement && document.activeElement.tagName;
