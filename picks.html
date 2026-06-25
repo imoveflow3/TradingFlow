@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TradingFlow // Market Scanner</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;600;700;900&family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060d1c;--bg1:#0a1628;--bg2:#0e1e34;
+  --neon:#3b82f6;--neon2:#06b6d4;
+  --green:#10b981;--green2:#34d399;
+  --red:#ef4444;--red2:#f87171;
+  --gold:#f59e0b;--purple:#818cf8;--magenta:#c084fc;
+  --border:rgba(255,255,255,0.07);--border2:rgba(59,130,246,0.2);
+  --text:#e2ecff;--muted:rgba(140,170,210,0.55);
+  --glass:rgba(6,13,28,0.88);--glass2:rgba(10,22,40,0.72);
+  --glow:0 0 22px rgba(59,130,246,0.3);
+  --glow-g:0 0 18px rgba(16,185,129,0.3);
+  --glow-r:0 0 18px rgba(239,68,68,0.3);
+}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:13px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{padding-bottom:40px}
+
+/* TOPBAR */
+.topbar{
+  position:sticky;top:0;z-index:100;
+  display:flex;align-items:center;gap:16px;
+  padding:0 20px;height:54px;
+  background:var(--glass);
+  border-bottom:1px solid var(--border2);
+  backdrop-filter:blur(20px);
+}
+.topbar-back{
+  display:flex;align-items:center;gap:6px;
+  color:var(--neon);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:600;
+  text-decoration:none;letter-spacing:0.08em;
+  padding:6px 10px;border:1px solid var(--border2);border-radius:6px;
+  transition:all 0.2s;white-space:nowrap;
+}
+.topbar-back:hover{background:rgba(59,130,246,0.1);box-shadow:var(--glow)}
+.topbar-title{
+  font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700;
+  background:linear-gradient(90deg,var(--neon),var(--neon2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  letter-spacing:0.1em;
+}
+.topbar-sub{color:var(--muted);font-size:11px;margin-left:4px}
+.topbar-spacer{flex:1}
+#live-clock{font-family:'Fira Code',monospace;font-size:12px;color:var(--neon2)}
+.refresh-btn{
+  display:flex;align-items:center;gap:5px;
+  background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);
+  color:var(--green);padding:5px 12px;border-radius:6px;
+  cursor:pointer;font-family:'Orbitron',sans-serif;font-size:10px;font-weight:600;
+  letter-spacing:0.06em;transition:all 0.2s;
+}
+.refresh-btn:hover{background:rgba(16,185,129,0.2);box-shadow:var(--glow-g)}
+.refresh-btn svg{width:12px;height:12px;transition:transform 0.5s}
+.refresh-btn.spinning svg{transform:rotate(360deg)}
+
+/* DISCLAIMER */
+.disclaimer{
+  margin:14px 20px 0;
+  background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);
+  border-radius:8px;padding:8px 14px;
+  display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--gold);
+}
+.disclaimer strong{font-weight:600}
+
+/* MAIN CONTENT */
+.content{padding:16px 20px;display:flex;flex-direction:column;gap:16px;max-width:1800px}
+
+/* SECTION HEADER */
+.sec-hdr{
+  display:flex;align-items:center;gap:8px;margin-bottom:10px;
+  font-family:'Orbitron',sans-serif;font-size:11px;font-weight:600;
+  color:var(--neon2);letter-spacing:0.1em;
+}
+.sec-hdr::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* INDEX CARDS */
+.indices-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.idx-card{
+  background:var(--glass2);border:1px solid var(--border);border-radius:10px;
+  padding:14px 16px;transition:all 0.25s;cursor:default;position:relative;overflow:hidden;
+}
+.idx-card::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at top left,rgba(59,130,246,0.05),transparent 60%);
+  pointer-events:none;
+}
+.idx-card:hover{border-color:var(--border2);box-shadow:var(--glow)}
+.idx-sym{font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:0.1em}
+.idx-name{font-size:11px;color:var(--muted);margin-top:2px}
+.idx-price{font-family:'Fira Code',monospace;font-size:22px;font-weight:600;color:var(--text);margin-top:8px}
+.idx-change{display:flex;align-items:center;gap:4px;margin-top:4px;font-family:'Fira Code',monospace;font-size:12px;font-weight:500}
+.idx-change.up{color:var(--green)}
+.idx-change.dn{color:var(--red)}
+.idx-bar{height:2px;border-radius:2px;margin-top:10px;background:var(--border)}
+.idx-bar-fill{height:100%;border-radius:2px;transition:width 0.8s var(--ease)}
+.idx-bar-fill.up{background:linear-gradient(90deg,var(--green),var(--green2))}
+.idx-bar-fill.dn{background:linear-gradient(90deg,var(--red),var(--red2))}
+
+/* MAIN GRID */
+.main-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+
+/* GLASS PANEL */
+.panel{
+  background:var(--glass2);border:1px solid var(--border);border-radius:12px;
+  overflow:hidden;
+}
+.panel-head{
+  padding:12px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.panel-title{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:var(--neon);letter-spacing:0.08em}
+.panel-badge{
+  font-family:'Fira Code',monospace;font-size:10px;padding:2px 8px;
+  border-radius:20px;font-weight:600;
+}
+.badge-g{background:rgba(16,185,129,0.15);color:var(--green);border:1px solid rgba(16,185,129,0.3)}
+.badge-r{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.3)}
+.badge-b{background:rgba(59,130,246,0.12);color:var(--neon);border:1px solid var(--border2)}
+
+/* TABS */
+.tab-bar{display:flex;border-bottom:1px solid var(--border)}
+.tab-btn{
+  flex:1;padding:9px 0;font-family:'Orbitron',sans-serif;font-size:10px;font-weight:600;
+  letter-spacing:0.06em;cursor:pointer;border:none;background:transparent;
+  color:var(--muted);transition:all 0.2s;
+}
+.tab-btn.active-g{color:var(--green);border-bottom:2px solid var(--green)}
+.tab-btn.active-r{color:var(--red);border-bottom:2px solid var(--red)}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* STOCK ROWS */
+.stock-list{padding:4px 0}
+.stock-row{
+  display:flex;align-items:center;padding:9px 16px;
+  border-bottom:1px solid rgba(255,255,255,0.03);
+  transition:background 0.15s;cursor:default;gap:8px;
+}
+.stock-row:hover{background:rgba(59,130,246,0.05)}
+.stock-row:last-child{border-bottom:none}
+.sr-rank{font-family:'Fira Code',monospace;font-size:10px;color:var(--muted);width:16px;text-align:right;flex-shrink:0}
+.sr-ticker{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:var(--text);width:50px;flex-shrink:0}
+.sr-name{font-size:11px;color:var(--muted);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sr-price{font-family:'Fira Code',monospace;font-size:12px;font-weight:500;color:var(--text);text-align:right;min-width:60px}
+.sr-chg{font-family:'Fira Code',monospace;font-size:12px;font-weight:600;text-align:right;min-width:56px}
+.sr-chg.up{color:var(--green)}
+.sr-chg.dn{color:var(--red)}
+.sr-bar-wrap{width:40px;height:4px;background:var(--border);border-radius:2px;flex-shrink:0}
+.sr-bar{height:100%;border-radius:2px}
+.sr-bar.up{background:var(--green)}
+.sr-bar.dn{background:var(--red)}
+
+/* SIGNAL SCANNER */
+.sig-row{
+  display:flex;align-items:center;padding:9px 16px;
+  border-bottom:1px solid rgba(255,255,255,0.03);gap:8px;
+}
+.sig-row:last-child{border-bottom:none}
+.sig-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sig-dot.bull{background:var(--green);box-shadow:0 0 6px var(--green)}
+.sig-dot.bear{background:var(--red);box-shadow:0 0 6px var(--red)}
+.sig-dot.neut{background:var(--gold);box-shadow:0 0 6px var(--gold)}
+.sig-ticker{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:var(--text);width:50px;flex-shrink:0}
+.sig-label{
+  font-family:'Fira Code',monospace;font-size:10px;padding:2px 7px;border-radius:4px;
+  flex-shrink:0;white-space:nowrap;
+}
+.sig-label.bull{background:rgba(16,185,129,0.12);color:var(--green);border:1px solid rgba(16,185,129,0.25)}
+.sig-label.bear{background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.2)}
+.sig-label.neut{background:rgba(245,158,11,0.1);color:var(--gold);border:1px solid rgba(245,158,11,0.2)}
+.sig-detail{font-size:10.5px;color:var(--muted);flex:1}
+.sig-strength{font-family:'Fira Code',monospace;font-size:10px;color:var(--muted)}
+
+/* SECTOR HEATMAP */
+.heat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:12px}
+.heat-cell{
+  border-radius:8px;padding:10px 8px;text-align:center;
+  transition:all 0.2s;cursor:default;position:relative;overflow:hidden;
+}
+.heat-cell:hover{transform:scale(1.03);z-index:1}
+.heat-sec{font-size:10px;font-weight:600;color:rgba(255,255,255,0.9);line-height:1.2}
+.heat-chg{font-family:'Fira Code',monospace;font-size:13px;font-weight:700;margin-top:4px}
+
+/* MOST ACTIVE - full width */
+.active-table{width:100%;border-collapse:collapse}
+.active-table th{
+  padding:9px 16px;text-align:left;
+  font-family:'Orbitron',sans-serif;font-size:9.5px;font-weight:600;letter-spacing:0.08em;
+  color:var(--muted);border-bottom:1px solid var(--border);background:rgba(10,22,40,0.5);
+}
+.active-table td{padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.03)}
+.active-table tr:hover td{background:rgba(59,130,246,0.04)}
+.active-table tr:last-child td{border-bottom:none}
+td.sym{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:var(--text)}
+td.nm{font-size:11px;color:var(--muted)}
+td.pr{font-family:'Fira Code',monospace;font-size:12px;font-weight:500;color:var(--text)}
+td.ch{font-family:'Fira Code',monospace;font-size:12px;font-weight:600}
+td.ch.up{color:var(--green)}
+td.ch.dn{color:var(--red)}
+td.vol{font-family:'Fira Code',monospace;font-size:11px;color:var(--neon2)}
+td.mkt{font-size:11px;color:var(--muted)}
+.vol-bar-wrap{width:80px;height:4px;background:var(--border);border-radius:2px;margin-top:4px}
+.vol-bar{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--neon),var(--neon2))}
+
+/* BOTTOM ROW */
+.bottom-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+
+/* MINI SPARKLINE (CSS trick) */
+.spark{display:flex;align-items:flex-end;gap:1.5px;height:24px}
+.spark-bar{width:3px;border-radius:1px;flex-shrink:0}
+
+/* PULSE DOT */
+.pulse-dot{
+  width:6px;height:6px;border-radius:50%;background:var(--green);
+  animation:pulse-anim 2s ease-in-out infinite;
+}
+@keyframes pulse-anim{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(16,185,129,0.5)}50%{opacity:0.8;box-shadow:0 0 0 4px rgba(16,185,129,0)}}
+
+/* MARKET STATUS */
+.mkt-status{
+  display:flex;align-items:center;gap:6px;
+  font-family:'Fira Code',monospace;font-size:11px;
+}
+
+/* COUNTDOWN */
+#mkt-countdown{color:var(--gold);font-family:'Fira Code',monospace;font-size:11px}
+
+/* RESPONSIVE */
+@media(max-width:1100px){
+  .indices-row{grid-template-columns:repeat(3,1fr)}
+  .main-grid{grid-template-columns:1fr 1fr}
+  .bottom-grid{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  .indices-row{grid-template-columns:repeat(2,1fr)}
+  .main-grid{grid-template-columns:1fr}
+  .topbar-sub{display:none}
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* UPDATE FLASH */
+@keyframes flash-g{0%{background:rgba(16,185,129,0.15)}100%{background:transparent}}
+@keyframes flash-r{0%{background:rgba(239,68,68,0.12)}100%{background:transparent}}
+.flash-g{animation:flash-g 0.6s ease-out}
+.flash-r{animation:flash-r 0.6s ease-out}
+
+/* EASE */
+:root{--ease:cubic-bezier(.16,1,.3,1)}
+
+/* SKELETON LOADER */
+.skel{background:linear-gradient(90deg,var(--bg2) 0%,rgba(255,255,255,0.04) 50%,var(--bg2) 100%);background-size:200% 100%;animation:skel-anim 1.4s ease-in-out infinite;border-radius:4px}
+@keyframes skel-anim{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* MARKET CLOSED BADGE */
+.closed-badge{
+  font-family:'Fira Code',monospace;font-size:10px;
+  padding:2px 8px;border-radius:4px;
+  background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.25);
+}
+.open-badge{
+  font-family:'Fira Code',monospace;font-size:10px;
+  padding:2px 8px;border-radius:4px;
+  background:rgba(16,185,129,0.1);color:var(--green);border:1px solid rgba(16,185,129,0.25);
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <a class="topbar-back" href="index.html">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    DASHBOARD
+  </a>
+  <div>
+    <div class="topbar-title">MARKET SCANNER</div>
+  </div>
+  <div class="topbar-sub">Live Data Simulation</div>
+  <div class="topbar-spacer"></div>
+  <div class="mkt-status">
+    <div class="pulse-dot" id="mkt-pulse"></div>
+    <span id="mkt-label">MARKET OPEN</span>
+    &nbsp;
+    <span id="mkt-countdown"></span>
+  </div>
+  <span id="live-clock"></span>
+  <button class="refresh-btn" onclick="refreshAll()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="refresh-icon">
+      <path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+    </svg>
+    REFRESH
+  </button>
+</div>
+
+<!-- DISCLAIMER -->
+<div class="disclaimer">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+  <span><strong>Educational / Informational Use Only.</strong> This scanner displays simulated market data for demonstration. Not financial advice. Always do your own research before trading.</span>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="content">
+
+  <!-- INDICES -->
+  <div>
+    <div class="sec-hdr">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      MARKET INDICES
+    </div>
+    <div class="indices-row" id="indices-row"></div>
+  </div>
+
+  <!-- TOP MOVERS + SIGNALS + SECTORS -->
+  <div class="main-grid">
+
+    <!-- TOP MOVERS -->
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">TOP MOVERS</div>
+        <div id="movers-badge" class="panel-badge badge-b">TODAY</div>
+      </div>
+      <div class="tab-bar">
+        <button class="tab-btn active-g" id="tab-gain" onclick="switchTab('gain')">▲ GAINERS</button>
+        <button class="tab-btn" id="tab-lose" onclick="switchTab('lose')">▼ LOSERS</button>
+      </div>
+      <div class="tab-pane active" id="pane-gain">
+        <div class="stock-list" id="gainers-list"></div>
+      </div>
+      <div class="tab-pane" id="pane-lose">
+        <div class="stock-list" id="losers-list"></div>
+      </div>
+    </div>
+
+    <!-- SIGNAL SCANNER -->
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">SIGNAL SCANNER</div>
+        <div class="panel-badge badge-b" id="sig-count">-- SIGNALS</div>
+      </div>
+      <div class="stock-list" id="signals-list" style="max-height:420px;overflow-y:auto"></div>
+    </div>
+
+    <!-- SECTOR HEATMAP -->
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">SECTOR HEATMAP</div>
+        <div class="panel-badge badge-b">S&P 500</div>
+      </div>
+      <div class="heat-grid" id="sector-grid"></div>
+    </div>
+
+  </div>
+
+  <!-- MOST ACTIVE -->
+  <div>
+    <div class="sec-hdr">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      MOST ACTIVE
+    </div>
+    <div class="panel">
+      <table class="active-table">
+        <thead>
+          <tr>
+            <th>#</th><th>SYMBOL</th><th>COMPANY</th><th>PRICE</th>
+            <th>CHANGE</th><th>% CHG</th><th>VOLUME</th><th>AVG VOL</th>
+            <th>MKT CAP</th><th>SECTOR</th>
+          </tr>
+        </thead>
+        <tbody id="active-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────
+const INDICES = [
+  { sym:'SPX', name:'S&P 500',    price:5876.43, chg:0.85,  invert:false },
+  { sym:'NDX', name:'NASDAQ 100', price:21245.67,chg:1.23,  invert:false },
+  { sym:'DJI', name:'DOW JONES',  price:43821.56,chg:0.34,  invert:false },
+  { sym:'VIX', name:'CBOE VIX',   price:18.45,   chg:-3.20, invert:true  },
+  { sym:'DXY', name:'US DOLLAR',  price:104.23,  chg:0.12,  invert:false },
+];
+
+const STOCKS = [
+  { t:'NVDA', n:'NVIDIA Corp.',       p:875.43,  s:'Technology',    mc:'$2.15T', avg:'42.8M' },
+  { t:'TSLA', n:'Tesla Inc.',         p:267.80,  s:'Cons. Disc.',   mc:'$851B',  avg:'98.4M' },
+  { t:'AAPL', n:'Apple Inc.',         p:228.52,  s:'Technology',    mc:'$3.48T', avg:'55.2M' },
+  { t:'META', n:'Meta Platforms',     p:558.91,  s:'Comm. Svcs.',   mc:'$1.42T', avg:'18.6M' },
+  { t:'MSFT', n:'Microsoft Corp.',    p:441.75,  s:'Technology',    mc:'$3.28T', avg:'20.1M' },
+  { t:'AMZN', n:'Amazon.com Inc.',    p:208.56,  s:'Cons. Disc.',   mc:'$2.21T', avg:'34.5M' },
+  { t:'AMD',  n:'Advanced Micro Dev.', p:152.30, s:'Technology',    mc:'$246B',  avg:'47.3M' },
+  { t:'GOOGL',n:'Alphabet Inc.',      p:185.23,  s:'Comm. Svcs.',   mc:'$2.29T', avg:'22.8M' },
+  { t:'NFLX', n:'Netflix Inc.',       p:685.20,  s:'Comm. Svcs.',   mc:'$293B',  avg:'5.1M'  },
+  { t:'CRM',  n:'Salesforce Inc.',    p:278.45,  s:'Technology',    mc:'$268B',  avg:'7.4M'  },
+  { t:'JPM',  n:'JPMorgan Chase',     p:248.90,  s:'Financials',    mc:'$711B',  avg:'8.9M'  },
+  { t:'BAC',  n:'Bank of America',    p:44.23,   s:'Financials',    mc:'$347B',  avg:'35.6M' },
+  { t:'GS',   n:'Goldman Sachs',      p:478.56,  s:'Financials',    mc:'$155B',  avg:'3.2M'  },
+  { t:'UNH',  n:'UnitedHealth Group', p:312.56,  s:'Healthcare',    mc:'$286B',  avg:'4.1M'  },
+  { t:'XOM',  n:'Exxon Mobil',        p:112.45,  s:'Energy',        mc:'$449B',  avg:'16.7M' },
+  { t:'JNJ',  n:'Johnson & Johnson',  p:152.34,  s:'Healthcare',    mc:'$363B',  avg:'7.8M'  },
+  { t:'V',    n:'Visa Inc.',          p:287.62,  s:'Financials',    mc:'$597B',  avg:'6.3M'  },
+  { t:'WMT',  n:'Walmart Inc.',       p:87.34,   s:'Cons. Staples', mc:'$702B',  avg:'12.4M' },
+  { t:'DIS',  n:'Walt Disney Co.',    p:112.87,  s:'Comm. Svcs.',   mc:'$207B',  avg:'11.2M' },
+  { t:'PYPL', n:'PayPal Holdings',    p:68.45,   s:'Technology',    mc:'$72B',   avg:'13.8M' },
+];
+
+const SIGNALS_DATA = [
+  { t:'NVDA', sig:'RSI Oversold',    type:'bull', detail:'RSI 28.4 — potential bounce',     str:'STRONG' },
+  { t:'AAPL', sig:'Golden Cross',    type:'bull', detail:'50MA crossed above 200MA',         str:'STRONG' },
+  { t:'META', sig:'MACD Bullish X',  type:'bull', detail:'MACD crossed signal line ↑',      str:'MOD'    },
+  { t:'AMD',  sig:'Volume Surge',    type:'bull', detail:'3.4× avg volume detected',        str:'STRONG' },
+  { t:'GOOGL',sig:'Breakout',        type:'bull', detail:'Above 52-week high resistance',   str:'MOD'    },
+  { t:'TSLA', sig:'RSI Overbought',  type:'bear', detail:'RSI 73.2 — extended, watch out',  str:'MOD'    },
+  { t:'DIS',  sig:'Death Cross',     type:'bear', detail:'50MA crossed below 200MA',         str:'STRONG' },
+  { t:'PYPL', sig:'MACD Bearish X',  type:'bear', detail:'MACD crossed signal line ↓',      str:'MOD'    },
+  { t:'BAC',  sig:'Breakdown',       type:'bear', detail:'Below key support $43.50',        str:'MOD'    },
+  { t:'V',    sig:'Consolidation',   type:'neut', detail:'Tight range — breakout pending',  str:'WATCH'  },
+  { t:'WMT',  sig:'Squeeze Setup',   type:'neut', detail:'BB width at 6-month low',         str:'WATCH'  },
+  { t:'XOM',  sig:'Vol Divergence',  type:'neut', detail:'Price ↑ vol declining',           str:'WATCH'  },
+];
+
+const SECTORS = [
+  { n:'Technology',      base:1.8  },
+  { n:'Financials',      base:0.6  },
+  { n:'Healthcare',      base:-0.3 },
+  { n:'Cons. Disc.',     base:2.1  },
+  { n:'Comm. Svcs.',     base:1.4  },
+  { n:'Energy',          base:-0.8 },
+  { n:'Industrials',     base:0.4  },
+  { n:'Cons. Staples',   base:-0.2 },
+  { n:'Utilities',       base:-1.1 },
+  { n:'Real Estate',     base:-0.5 },
+  { n:'Materials',       base:0.9  },
+];
+
+// ─── STATE ───────────────────────────────────────────────────
+let idxState = INDICES.map(i => ({ ...i, cur: i.price, curChg: i.chg }));
+let stkState = STOCKS.map(s => ({ ...s, cur: s.p, chgPct: (Math.random()-0.3)*8, chgAbs: 0, vol: Math.random()*100+20 }));
+stkState.forEach(s => { s.chgAbs = s.cur * s.chgPct / 100; s.cur = s.p + s.chgAbs; });
+let secState = SECTORS.map(s => ({ ...s, cur: s.base + (Math.random()-0.5)*0.4 }));
+let activeTab = 'gain';
+
+// ─── CLOCK ───────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('live-clock').textContent =
+    now.toLocaleTimeString('en-US', { hour12: false, timeZone: 'America/New_York' }) + ' ET';
+  updateMarketStatus();
+}
+function updateMarketStatus() {
+  const now = new Date();
+  const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const h = et.getHours(), m = et.getMinutes(), day = et.getDay();
+  const mins = h * 60 + m;
+  const isWeekday = day >= 1 && day <= 5;
+  const isOpen = isWeekday && mins >= 570 && mins < 960; // 9:30 - 16:00
+  const pulse = document.getElementById('mkt-pulse');
+  const label = document.getElementById('mkt-label');
+  const countdown = document.getElementById('mkt-countdown');
+  if (isOpen) {
+    pulse.style.background = 'var(--green)';
+    label.textContent = 'MARKET OPEN';
+    label.style.color = 'var(--green)';
+    const minsLeft = 960 - mins;
+    countdown.textContent = `closes in ${Math.floor(minsLeft/60)}h ${minsLeft%60}m`;
+  } else {
+    pulse.style.background = 'var(--red)';
+    pulse.style.animation = 'none';
+    label.textContent = 'MARKET CLOSED';
+    label.style.color = 'var(--red)';
+    let minsToOpen = 0;
+    if (isWeekday && mins < 570) {
+      minsToOpen = 570 - mins;
+    } else {
+      const daysUntil = day === 0 ? 1 : (day === 6 ? 2 : (7 - day + 1));
+      minsToOpen = (daysUntil * 1440) + 570 - mins;
+    }
+    countdown.textContent = `opens in ${Math.floor(minsToOpen/60)}h ${minsToOpen%60}m`;
+  }
+}
+
+// ─── RANDOMISE PRICES ────────────────────────────────────────
+function jitter(pct, mag=0.12) { return pct + (Math.random()-0.5)*mag; }
+
+function updatePrices() {
+  idxState.forEach(s => {
+    s.curChg = jitter(s.curChg, 0.06);
+    s.cur = s.price * (1 + s.curChg / 100);
+  });
+  stkState.forEach(s => {
+    s.chgPct = jitter(s.chgPct, 0.15);
+    s.chgAbs = s.p * s.chgPct / 100;
+    s.cur = s.p + s.chgAbs;
+    s.vol = Math.max(5, s.vol + (Math.random()-0.5)*5);
+  });
+  secState.forEach(s => { s.cur = jitter(s.cur, 0.05); });
+}
+
+// ─── FORMAT HELPERS ─────────────────────────────────────────
+const fmt = (n, d=2) => n.toLocaleString('en-US', { minimumFractionDigits:d, maximumFractionDigits:d });
+const fmtChg = (n, d=2) => (n >= 0 ? '+' : '') + fmt(n, d);
+const fmtVol = (n) => {
+  if (n >= 1000) return (n/1000).toFixed(1) + 'B';
+  if (n >= 1) return n.toFixed(1) + 'M';
+  return (n*1000).toFixed(0) + 'K';
+};
+
+// ─── RENDER INDICES ──────────────────────────────────────────
+function renderIndices() {
+  const el = document.getElementById('indices-row');
+  el.innerHTML = idxState.map(s => {
+    const up = s.invert ? s.curChg < 0 : s.curChg >= 0;
+    const cls = up ? 'up' : 'dn';
+    const arrow = up ? '▲' : '▼';
+    const barPct = Math.min(100, Math.abs(s.curChg) * 12);
+    return `<div class="idx-card">
+      <div class="idx-sym">${s.sym}</div>
+      <div class="idx-name">${s.name}</div>
+      <div class="idx-price">${s.sym==='DXY'?fmt(s.cur,3):s.cur>1000?fmt(s.cur,2):fmt(s.cur,2)}</div>
+      <div class="idx-change ${cls}">${arrow} ${fmtChg(s.curChg)}%</div>
+      <div class="idx-bar"><div class="idx-bar-fill ${cls}" style="width:${barPct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ─── RENDER MOVERS ───────────────────────────────────────────
+function renderMovers() {
+  const sorted = [...stkState].sort((a,b) => b.chgPct - a.chgPct);
+  const gainers = sorted.slice(0, 10);
+  const losers  = [...sorted].reverse().slice(0, 10);
+
+  const buildList = (list) => list.map((s, i) => {
+    const up = s.chgPct >= 0;
+    const cls = up ? 'up' : 'dn';
+    const barW = Math.min(100, Math.abs(s.chgPct) * 8);
+    return `<div class="stock-row">
+      <span class="sr-rank">${i+1}</span>
+      <span class="sr-ticker">${s.t}</span>
+      <span class="sr-name">${s.n}</span>
+      <span class="sr-price">$${fmt(s.cur)}</span>
+      <span class="sr-chg ${cls}">${fmtChg(s.chgPct)}%</span>
+      <div class="sr-bar-wrap"><div class="sr-bar ${cls}" style="width:${barW}%"></div></div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('gainers-list').innerHTML = buildList(gainers);
+  document.getElementById('losers-list').innerHTML  = buildList(losers);
+}
+
+// ─── RENDER SIGNALS ──────────────────────────────────────────
+function renderSignals() {
+  const el = document.getElementById('signals-list');
+  el.innerHTML = SIGNALS_DATA.map(s => {
+    const typeLabel = s.type === 'bull' ? 'BULLISH' : s.type === 'bear' ? 'BEARISH' : 'NEUTRAL';
+    return `<div class="sig-row">
+      <div class="sig-dot ${s.type}"></div>
+      <span class="sig-ticker">${s.t}</span>
+      <span class="sig-label ${s.type}">${s.sig}</span>
+      <span class="sig-detail">${s.detail}</span>
+      <span class="sig-strength">${s.str}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('sig-count').textContent = SIGNALS_DATA.length + ' SIGNALS';
+}
+
+// ─── RENDER SECTORS ──────────────────────────────────────────
+function renderSectors() {
+  const el = document.getElementById('sector-grid');
+  const max = Math.max(...secState.map(s => Math.abs(s.cur)));
+  el.innerHTML = secState.map(s => {
+    const up = s.cur >= 0;
+    const intensity = Math.min(0.85, Math.abs(s.cur) / max);
+    const bg = up
+      ? `rgba(16,185,129,${0.08 + intensity*0.45})`
+      : `rgba(239,68,68,${0.08 + intensity*0.45})`;
+    const border = up ? `rgba(16,185,129,${0.3 + intensity*0.4})` : `rgba(239,68,68,${0.3 + intensity*0.4})`;
+    const chgStr = (s.cur >= 0 ? '+' : '') + s.cur.toFixed(2) + '%';
+    return `<div class="heat-cell" style="background:${bg};border:1px solid ${border}">
+      <div class="heat-sec">${s.n}</div>
+      <div class="heat-chg" style="color:${up?'var(--green)':'var(--red)'}">${chgStr}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── RENDER MOST ACTIVE ──────────────────────────────────────
+function renderActive() {
+  const byVol = [...stkState].sort((a,b) => b.vol - a.vol).slice(0, 12);
+  const maxVol = Math.max(...byVol.map(s => s.vol));
+  const el = document.getElementById('active-tbody');
+  el.innerHTML = byVol.map((s, i) => {
+    const up = s.chgPct >= 0;
+    const cls = up ? 'up' : 'dn';
+    const barW = (s.vol / maxVol * 100).toFixed(0);
+    const stk = STOCKS.find(x => x.t === s.t);
+    return `<tr>
+      <td style="color:var(--muted);font-family:'Fira Code',monospace;font-size:11px">${i+1}</td>
+      <td class="sym">${s.t}</td>
+      <td class="nm">${s.n}</td>
+      <td class="pr">$${fmt(s.cur)}</td>
+      <td class="ch ${cls}">${fmtChg(s.chgAbs)}</td>
+      <td class="ch ${cls}">${fmtChg(s.chgPct)}%</td>
+      <td class="vol">
+        ${fmtVol(s.vol)}
+        <div class="vol-bar-wrap"><div class="vol-bar" style="width:${barW}%"></div></div>
+      </td>
+      <td class="vol">${stk?.avg || '—'}</td>
+      <td class="mkt">${stk?.mc || '—'}</td>
+      <td class="mkt">${s.s}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── TABS ────────────────────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('pane-gain').classList.toggle('active', tab === 'gain');
+  document.getElementById('pane-lose').classList.toggle('active', tab === 'lose');
+  const tg = document.getElementById('tab-gain');
+  const tl = document.getElementById('tab-lose');
+  tg.className = 'tab-btn' + (tab === 'gain' ? ' active-g' : '');
+  tl.className = 'tab-btn' + (tab === 'lose' ? ' active-r' : '');
+}
+
+// ─── REFRESH ALL ─────────────────────────────────────────────
+function refreshAll(animate=true) {
+  if (animate) {
+    const btn = document.querySelector('.refresh-btn');
+    btn.classList.add('spinning');
+    setTimeout(() => btn.classList.remove('spinning'), 500);
+  }
+  updatePrices();
+  renderIndices();
+  renderMovers();
+  renderSectors();
+  renderActive();
+  // Signals are static (no live API)
+}
+
+// ─── INIT ────────────────────────────────────────────────────
+renderSignals();
+refreshAll(false);
+updateClock();
+setInterval(updateClock, 1000);
+setInterval(() => refreshAll(false), 30000); // auto-refresh every 30s
+
+</script>
+</body>
+</html>
