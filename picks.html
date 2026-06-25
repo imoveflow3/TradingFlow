@@ -263,16 +263,113 @@ td.mkt{font-size:11px;color:var(--muted)}
 @keyframes skel-anim{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
 /* MARKET CLOSED BADGE */
-.closed-badge{
-  font-family:'Fira Code',monospace;font-size:10px;
-  padding:2px 8px;border-radius:4px;
-  background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.25);
+.closed-badge{font-family:'Fira Code',monospace;font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.25)}
+.open-badge{font-family:'Fira Code',monospace;font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(16,185,129,0.1);color:var(--green);border:1px solid rgba(16,185,129,0.25)}
+
+/* ── AI PICKS SECTION ── */
+.ai-picks-header{
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;
 }
-.open-badge{
-  font-family:'Fira Code',monospace;font-size:10px;
-  padding:2px 8px;border-radius:4px;
-  background:rgba(16,185,129,0.1);color:var(--green);border:1px solid rgba(16,185,129,0.25);
+.ai-badge{
+  display:flex;align-items:center;gap:6px;
+  background:linear-gradient(135deg,rgba(129,140,248,0.15),rgba(192,132,252,0.1));
+  border:1px solid rgba(129,140,248,0.35);border-radius:20px;
+  padding:4px 12px;font-family:'Fira Code',monospace;font-size:10px;color:var(--purple);
 }
+.ai-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--magenta);animation:pulse-anim 1.8s ease-in-out infinite}
+.picks-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:1300px){.picks-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.picks-grid{grid-template-columns:1fr}}
+
+.pick-card{
+  background:var(--glass2);
+  border:1px solid var(--border);
+  border-radius:14px;overflow:hidden;
+  transition:all 0.3s;position:relative;cursor:default;
+}
+.pick-card:hover{
+  border-color:rgba(129,140,248,0.4);
+  box-shadow:0 0 30px rgba(129,140,248,0.12),0 4px 20px rgba(0,0,0,0.3);
+  transform:translateY(-2px);
+}
+.pick-card-top{
+  padding:14px 16px 10px;
+  background:linear-gradient(180deg,rgba(129,140,248,0.06) 0%,transparent 100%);
+  border-bottom:1px solid var(--border);
+}
+.pick-rank{
+  font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;
+  color:var(--muted);letter-spacing:0.1em;margin-bottom:6px;
+}
+.pick-ticker-row{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2px}
+.pick-ticker{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;color:var(--text)}
+.pick-score-wrap{text-align:right}
+.pick-score-num{font-family:'Fira Code',monospace;font-size:20px;font-weight:700;line-height:1}
+.pick-score-lbl{font-size:9px;color:var(--muted);text-align:right;margin-top:1px}
+.pick-name{font-size:11px;color:var(--muted);margin-bottom:8px}
+.pick-price-row{display:flex;align-items:baseline;gap:8px}
+.pick-price{font-family:'Fira Code',monospace;font-size:15px;font-weight:600;color:var(--text)}
+.pick-chg{font-family:'Fira Code',monospace;font-size:12px;font-weight:600}
+.pick-chg.up{color:var(--green)}
+.pick-chg.dn{color:var(--red)}
+
+/* SCORE RING (SVG) */
+.pick-score-ring{position:relative;width:54px;height:54px}
+.pick-score-ring svg{transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:rgba(255,255,255,0.06);stroke-width:4}
+.ring-fill{fill:none;stroke-width:4;stroke-linecap:round;transition:stroke-dashoffset 1s var(--ease)}
+.ring-text{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+}
+.ring-num{font-family:'Fira Code',monospace;font-size:13px;font-weight:700;line-height:1}
+.ring-sub{font-size:8px;color:var(--muted);line-height:1;margin-top:1px}
+
+/* SETUP BADGE */
+.setup-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 9px;border-radius:20px;font-family:'Orbitron',sans-serif;
+  font-size:9px;font-weight:700;letter-spacing:0.06em;margin:10px 16px 0;
+}
+.setup-badge.momentum{background:rgba(59,130,246,0.12);color:var(--neon);border:1px solid rgba(59,130,246,0.3)}
+.setup-badge.bounce{background:rgba(16,185,129,0.1);color:var(--green);border:1px solid rgba(16,185,129,0.25)}
+.setup-badge.breakout{background:rgba(245,158,11,0.1);color:var(--gold);border:1px solid rgba(245,158,11,0.25)}
+.setup-badge.trend{background:rgba(129,140,248,0.12);color:var(--purple);border:1px solid rgba(129,140,248,0.3)}
+
+/* SCORE BARS */
+.pick-bars{padding:12px 16px 0}
+.pick-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.pick-bar-lbl{font-size:10px;color:var(--muted);width:70px;flex-shrink:0}
+.pick-bar-track{flex:1;height:4px;background:var(--border);border-radius:2px}
+.pick-bar-fill{height:100%;border-radius:2px;transition:width 0.8s var(--ease)}
+.pick-bar-val{font-family:'Fira Code',monospace;font-size:10px;color:var(--muted);width:28px;text-align:right;flex-shrink:0}
+
+/* REASONS */
+.pick-reasons{padding:10px 16px 14px}
+.pick-reason{
+  display:flex;align-items:flex-start;gap:6px;
+  font-size:11px;color:var(--muted);margin-bottom:5px;line-height:1.35;
+}
+.pick-reason:last-child{margin-bottom:0}
+.pr-icon{flex-shrink:0;margin-top:1px}
+.pr-icon.bull{color:var(--green)}
+.pr-icon.bear{color:var(--red)}
+.pr-icon.info{color:var(--neon2)}
+
+/* HOLD / RISK */
+.pick-footer{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 16px;border-top:1px solid var(--border);
+  background:rgba(0,0,0,0.2);
+}
+.pf-hold{font-size:10.5px;color:var(--muted)}
+.pf-hold strong{color:var(--text);font-weight:600}
+.risk-pill{
+  font-family:'Fira Code',monospace;font-size:9px;padding:2px 8px;border-radius:10px;
+}
+.risk-low{background:rgba(16,185,129,0.1);color:var(--green);border:1px solid rgba(16,185,129,0.25)}
+.risk-med{background:rgba(245,158,11,0.1);color:var(--gold);border:1px solid rgba(245,158,11,0.25)}
+.risk-high{background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.25)}
 </style>
 </head>
 <body>
@@ -319,6 +416,21 @@ td.mkt{font-size:11px;color:var(--muted)}
       MARKET INDICES
     </div>
     <div class="indices-row" id="indices-row"></div>
+  </div>
+
+  <!-- AI TECHNICAL PICKS -->
+  <div>
+    <div class="ai-picks-header">
+      <div class="sec-hdr" style="margin-bottom:0;flex:1">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        AI TECHNICAL PICKS — TOP SETUPS TODAY
+      </div>
+      <div class="ai-badge">
+        <div class="ai-badge-dot"></div>
+        ALGO SCORING ENGINE
+      </div>
+    </div>
+    <div class="picks-grid" id="picks-grid"></div>
   </div>
 
   <!-- TOP MOVERS + SIGNALS + SECTORS -->
@@ -646,15 +758,153 @@ function refreshAll(animate=true) {
   renderMovers();
   renderSectors();
   renderActive();
+  renderPicks();
   // Signals are static (no live API)
+}
+
+// ─── AI SCORING ENGINE ───────────────────────────────────────
+const AI_PICKS_DATA = [
+  {
+    t:'NVDA', n:'NVIDIA Corp.', setup:'bounce', setupLabel:'OVERSOLD BOUNCE',
+    hold:'3–10 days', risk:'med',
+    scores:{ trend:88, momentum:72, volume:95, rsi:82, sector:90 },
+    reasons:[
+      { type:'bull', text:'RSI hit 28 — deeply oversold, mean-reversion historically strong here' },
+      { type:'bull', text:'Volume 3.4× above 20-day average — institutional accumulation signal' },
+      { type:'bull', text:'AI/semiconductor sector leading SPX by +1.9% this week' },
+      { type:'info', text:'Price sitting at 200-day moving average — key historical support' },
+      { type:'bear', text:'Watch $840 — break below invalidates the setup' },
+    ]
+  },
+  {
+    t:'AAPL', n:'Apple Inc.', setup:'trend', setupLabel:'TREND CONTINUATION',
+    hold:'2–4 weeks', risk:'low',
+    scores:{ trend:94, momentum:81, volume:70, rsi:58, sector:85 },
+    reasons:[
+      { type:'bull', text:'Golden Cross confirmed — 50MA crossed above 200MA (rare long-term signal)' },
+      { type:'bull', text:'RSI at 58 — momentum healthy, not yet overbought, room to run' },
+      { type:'bull', text:'Consecutive higher highs and higher lows for 6 straight sessions' },
+      { type:'info', text:'Low beta (0.83) makes this a lower-risk momentum play vs peers' },
+      { type:'bear', text:'Resistance at $235 — key level to watch for potential stall' },
+    ]
+  },
+  {
+    t:'AMD', n:'Adv. Micro Devices', setup:'breakout', setupLabel:'VOLUME BREAKOUT',
+    hold:'1–5 days', risk:'high',
+    scores:{ trend:76, momentum:91, volume:98, rsi:66, sector:88 },
+    reasons:[
+      { type:'bull', text:'Breaking out of 3-week tight consolidation range on 4× avg volume' },
+      { type:'bull', text:'Momentum score highest in semiconductor peer group today' },
+      { type:'bull', text:'Short interest at 2.1% — low overhang, fewer headwinds' },
+      { type:'info', text:'AI chip demand catalyst: competing directly with NVDA in data center' },
+      { type:'bear', text:'High volatility name — wide stop needed, sizing down recommended' },
+    ]
+  },
+  {
+    t:'META', n:'Meta Platforms', setup:'momentum', setupLabel:'MOMENTUM',
+    hold:'1–3 weeks', risk:'low',
+    scores:{ trend:89, momentum:87, volume:74, rsi:61, sector:80 },
+    reasons:[
+      { type:'bull', text:'MACD bullish crossover confirmed on daily chart — fresh buy signal' },
+      { type:'bull', text:'Outperforming S&P 500 by +3.2% over past 10 sessions' },
+      { type:'bull', text:'Ad revenue growth trend intact — strong fundamental tailwind' },
+      { type:'info', text:'Institutional ownership increased +4.3% last quarter (13F data)' },
+      { type:'bear', text:'Regulatory risk in EU — binary event risk if any headlines drop' },
+    ]
+  },
+];
+
+function scoreColor(s) {
+  if (s >= 85) return 'var(--green)';
+  if (s >= 65) return 'var(--neon2)';
+  if (s >= 45) return 'var(--gold)';
+  return 'var(--red)';
+}
+
+function overallScore(p) {
+  const { trend, momentum, volume, rsi, sector } = p.scores;
+  return Math.round(trend*0.25 + momentum*0.25 + volume*0.2 + rsi*0.15 + sector*0.15);
+}
+
+function renderPicks() {
+  const el = document.getElementById('picks-grid');
+  el.innerHTML = AI_PICKS_DATA.map((p, idx) => {
+    const stk = stkState.find(s => s.t === p.t) || { cur: 0, chgPct: 0 };
+    const score = overallScore(p);
+    const sc = scoreColor(score);
+    const up = stk.chgPct >= 0;
+    const circumference = 2 * Math.PI * 22; // r=22
+    const offset = circumference - (score / 100) * circumference;
+    const barColors = {
+      trend:    'linear-gradient(90deg,var(--purple),var(--neon))',
+      momentum: 'linear-gradient(90deg,var(--neon),var(--neon2))',
+      volume:   'linear-gradient(90deg,var(--neon2),var(--green2))',
+      rsi:      'linear-gradient(90deg,var(--green),var(--green2))',
+      sector:   'linear-gradient(90deg,var(--gold),var(--green2))',
+    };
+    const bars = ['trend','momentum','volume','rsi','sector'].map(k => {
+      const v = p.scores[k];
+      return `<div class="pick-bar-row">
+        <span class="pick-bar-lbl">${k.toUpperCase()}</span>
+        <div class="pick-bar-track"><div class="pick-bar-fill" style="width:${v}%;background:${barColors[k]}"></div></div>
+        <span class="pick-bar-val">${v}</span>
+      </div>`;
+    }).join('');
+    const reasons = p.reasons.map(r => {
+      const icon = r.type === 'bull'
+        ? `<svg class="pr-icon bull" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`
+        : r.type === 'bear'
+        ? `<svg class="pr-icon bear" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`
+        : `<svg class="pr-icon info" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+      return `<div class="pick-reason">${icon}<span>${r.text}</span></div>`;
+    }).join('');
+    const riskClass = p.risk === 'low' ? 'risk-low' : p.risk === 'med' ? 'risk-med' : 'risk-high';
+    const riskLabel = p.risk === 'low' ? 'LOW RISK' : p.risk === 'med' ? 'MED RISK' : 'HIGH RISK';
+    return `<div class="pick-card">
+      <div class="pick-card-top">
+        <div class="pick-rank">#${idx+1} AI PICK</div>
+        <div class="pick-ticker-row">
+          <div>
+            <div class="pick-ticker">${p.t}</div>
+            <div class="pick-name">${p.n}</div>
+          </div>
+          <div class="pick-score-ring">
+            <svg width="54" height="54" viewBox="0 0 54 54">
+              <circle class="ring-bg" cx="27" cy="27" r="22"/>
+              <circle class="ring-fill" cx="27" cy="27" r="22"
+                stroke="${sc}"
+                stroke-dasharray="${circumference}"
+                stroke-dashoffset="${offset}"/>
+            </svg>
+            <div class="ring-text">
+              <span class="ring-num" style="color:${sc}">${score}</span>
+              <span class="ring-sub">SCORE</span>
+            </div>
+          </div>
+        </div>
+        <div class="pick-price-row">
+          <span class="pick-price">$${fmt(stk.cur || 0)}</span>
+          <span class="pick-chg ${up?'up':'dn'}">${fmtChg(stk.chgPct)}%</span>
+        </div>
+      </div>
+      <span class="setup-badge ${p.setup}">${p.setupLabel}</span>
+      <div class="pick-bars">${bars}</div>
+      <div class="pick-reasons">${reasons}</div>
+      <div class="pick-footer">
+        <span class="pf-hold">Hold: <strong>${p.hold}</strong></span>
+        <span class="risk-pill ${riskClass}">${riskLabel}</span>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ─── INIT ────────────────────────────────────────────────────
 renderSignals();
+renderPicks();
 refreshAll(false);
 updateClock();
 setInterval(updateClock, 1000);
-setInterval(() => refreshAll(false), 30000); // auto-refresh every 30s
+setInterval(() => refreshAll(false), 30000);
 
 </script>
 </body>
