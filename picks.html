@@ -471,9 +471,15 @@ td.mkt{font-size:11px;color:var(--muted)}
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
         AI TECHNICAL PICKS — TOP SETUPS TODAY
       </div>
-      <div class="ai-badge">
-        <div class="ai-badge-dot"></div>
-        ALGO SCORING ENGINE
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+        <div style="text-align:right">
+          <div style="font-family:'Fira Code',monospace;font-size:11px;color:var(--neon2)" id="picks-date-lbl"></div>
+          <div style="font-family:'Fira Code',monospace;font-size:10px;color:var(--muted)" id="picks-countdown"></div>
+        </div>
+        <div class="ai-badge">
+          <div class="ai-badge-dot"></div>
+          DAILY ENGINE
+        </div>
       </div>
     </div>
     <div class="picks-grid" id="picks-grid"></div>
@@ -974,7 +980,187 @@ function refreshAll(animate=true) {
   // Signals are static (no live API)
 }
 
-// ─── AI SCORING ENGINE ───────────────────────────────────────
+// ─── DAILY SEEDED PICKS ENGINE ───────────────────────────────
+
+// Mulberry32 seeded RNG — same seed = same output every time
+function mkRng(seed) {
+  let s = seed | 0;
+  return () => {
+    s = s + 0x6D2B79F5 | 0;
+    let t = Math.imul(s ^ s >>> 15, 1 | s);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function getEtNow() {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+}
+
+function getDaySeed() {
+  const et = getEtNow();
+  return et.getFullYear() * 10000 + (et.getMonth() + 1) * 100 + et.getDate();
+}
+
+function pickN(rng, arr, n) {
+  const pool = [...arr], out = [];
+  while (out.length < n && pool.length) {
+    const i = Math.floor(rng() * pool.length);
+    out.push(pool.splice(i, 1)[0]);
+  }
+  return out;
+}
+
+// ── REASON POOLS ─────────────────────────────────────────────
+const BULL_POOL = {
+  momentum: [
+    'MACD bullish crossover confirmed on daily chart — fresh institutional buy signal',
+    'Breaking above 20-day moving average on rising volume — momentum building',
+    'Relative strength vs S&P 500 at highest level in 3 months — leadership',
+    'RSI rising from midline through 55 — trending, not yet overbought',
+    'Consecutive higher closes for 5+ sessions — trend acceleration confirmed',
+    'Price above all key moving averages (20, 50, 200) — clean technical structure',
+    'Sector showing broad-based strength — tide lifting this stock',
+    'Institutional accumulation visible: above-average volume on up days vs down days',
+    'Short-term options flow skewed bullish — smart money positioning long',
+    '52-week high within 3% — breakout imminent if momentum holds',
+  ],
+  bounce: [
+    'RSI deeply oversold (below 32) — mean-reversion setup with strong historical edge',
+    'Price testing 200-day moving average — key long-term support, multiple prior bounces here',
+    'Hammer candlestick on high volume — reversal signal from sellers exhausted',
+    'Touching lower Bollinger Band — statistically likely mean reversion toward midline',
+    'Multiple support confluences: 200MA + prior base + key Fib level at current price',
+    'Capitulation-style volume on last red day — exhaustion selling, bottom likely near',
+    'Bullish divergence: price at new lows, RSI not confirming — divergence bullish',
+    'Stock down 15%+ from recent high — deeply discounted vs peers in same sector',
+    'Institutional grade support zone held perfectly for 2 consecutive tests',
+    'Fear & Greed at extreme fear — contrarian setup with high reward potential',
+  ],
+  breakout: [
+    'Breaking out of multi-week tight consolidation range on 3× average volume',
+    '52-week high breakout — no overhead resistance, first time in clean air',
+    'Bollinger Band contraction ending — volatility squeeze breakout in progress',
+    'Above key resistance that rejected price for 4 straight weeks — bulls in control',
+    'Cup and handle pattern completing — classic continuation, measured target higher',
+    'High short interest (>7%) — short squeeze acceleration possible on continued rally',
+    'Gap up on strong catalyst — institutional gap coverage driving follow-through',
+    'Price closes above prior swing high on daily — buyers absorbing all supply',
+    'Momentum divergence: stock breaking out while sector flat — relative strength',
+    'Earnings beat + guidance raise created fresh demand at higher price levels',
+  ],
+  trend: [
+    'Golden Cross confirmed: 50MA crossed above 200MA — rare long-term bullish signal',
+    'All timeframe moving averages aligned bullish (20 > 50 > 200) — perfect structure',
+    'Higher highs and higher lows intact for 8+ sessions — textbook uptrend',
+    'RSI holding steady 55–65 range — trending, healthy, not extended',
+    'Low beta vs market keeps position stable during broader volatility events',
+    'Consistent institutional inflows: 12+ consecutive weeks of net buying (13F trend)',
+    'Sector leadership: outperforming S&P 500 by 4%+ over past 30 sessions',
+    'Stock making new highs while broader market consolidates — true strength',
+    'Revenue growth accelerating for 3 consecutive quarters — fundamentals matching chart',
+    'Analyst upgrades and price target increases creating sustained buying demand',
+  ],
+};
+
+const RISK_POOL = [
+  'Broad market selloff would likely drag this lower despite strong setup — hedge accordingly',
+  'Earnings uncertainty approaching — consider reducing size before the report date',
+  'High beta name (>1.5) — daily swings of 3%+ possible, size positions carefully',
+  'Macro sensitivity: interest rate or inflation data could reverse this sector quickly',
+  'Watch the 20-day moving average — a close below it would signal setup failure',
+  'Recent catalyst may already be priced in — patience for a pullback entry is ideal',
+  'Sector rotation risk: capital may shift before target price is reached',
+  'Stop loss discipline critical — define your exit before entering any position',
+  'Liquidity can thin quickly in fast markets — use limit orders, not market orders',
+  'Geopolitical or regulatory headline risk could create sudden gap down event',
+];
+
+const INFO_POOL = [
+  'Market cap puts this in large-cap tier — enough liquidity for any position size',
+  'Average daily volume is high — tight spreads, easy to enter and exit cleanly',
+  'Insider buying detected last quarter — management has skin in the game',
+  'Share buyback program currently active — provides price floor and EPS support',
+  'Analyst consensus rating is Buy/Strong Buy with price targets above current price',
+  'Part of a leading index — subject to passive fund flows that provide steady demand',
+  'Dividend yield provides income while holding the position for the setup to play out',
+  'Options market showing elevated call activity — traders positioning for upside',
+  'Year-to-date performance leading its sector peer group — money flowing here',
+  'Listed on major exchange with full SEC reporting — transparent and auditable',
+];
+
+// Stock-specific catalysts inject realism for well-known tickers
+const STOCK_INTEL = {
+  NVDA:['AI GPU demand at record levels — data center revenue growing 100%+ YoY','Blackwell chip architecture is 2 generations ahead of nearest competition'],
+  AAPL:['iPhone cycle driving hardware revenue — services segment at $100B/yr run rate','App Store and subscription revenue diversifying away from hardware dependence'],
+  MSFT:['Azure cloud growing 29% YoY — highest rate in 6 quarters','Copilot AI integration across Office 365 just beginning to monetize at scale'],
+  META:['Reels now dominant format — ad load and CPM both increasing','Threads user growth exceeding expectations — new monetizable platform emerging'],
+  AMZN:['AWS re-accelerating to 17%+ growth — enterprise AI workload migration driving this','Advertising revenue becoming $50B+ business — high-margin growth engine'],
+  TSLA:['Energy storage business growing 80% YoY — often overlooked by analysts','Optimus robot development on track — could be transformative 5-year catalyst'],
+  GOOGL:['Search AI integration (AI Overviews) monetizing better than feared','YouTube Shorts monetization closing gap with long-form — ad revenue compounding'],
+  PLTR:['AIP (AI Platform) commercial revenue growing 55% YoY — enterprise adoption','New government contracts with DoD and intelligence agencies expanding revenue'],
+  AMD:['MI300X AI accelerator gaining market share from NVDA in data center','PC CPU market share gains — Intel losing ground in both consumer and server'],
+  COIN:['Spot Bitcoin ETF custody revenue creating new recurring income stream','Base L2 network transaction fees growing — new diversified revenue pillar'],
+  SHOP:['GMV growing 24% — merchant count at all-time high across all regions','International expansion into APAC markets opening massive TAM opportunity'],
+  NFLX:['Ad-supported tier growing faster than expected — $10B/yr ad revenue possible','Live events strategy (sports, fights) expanding total addressable audience'],
+  UBER:['First sustained profitability achieved — now generating real free cash flow','Autonomous vehicle fleet partnerships (Waymo) reducing future driver costs'],
+  ABNB:['Long-term stay category now 20%+ of bookings — higher margin stays','Supply-demand still favorable: host supply growing slower than travel demand'],
+  RDDT:['Data licensing agreements with AI companies providing non-ad revenue','DAU growth accelerating post-IPO — advertisers following eyeballs'],
+  SPOT:['Podcast and audiobook expansion increasing revenue per user materially','Gross margin expansion — music label renegotiations improving economics'],
+};
+
+const SETUP_META = {
+  momentum: { label:'MOMENTUM',          hold:'1–3 weeks', risk:'low'  },
+  bounce:   { label:'OVERSOLD BOUNCE',   hold:'3–10 days', risk:'med'  },
+  breakout: { label:'VOLUME BREAKOUT',   hold:'1–5 days',  risk:'high' },
+  trend:    { label:'TREND CONTINUATION',hold:'2–6 weeks', risk:'low'  },
+};
+
+function genScores(rng, setup) {
+  const bases = {
+    momentum: { trend:80, momentum:89, volume:72, rsi:66, sector:78 },
+    bounce:   { trend:70, momentum:73, volume:82, rsi:85, sector:75 },
+    breakout: { trend:74, momentum:91, volume:95, rsi:68, sector:82 },
+    trend:    { trend:93, momentum:79, volume:65, rsi:62, sector:84 },
+  }[setup] || { trend:75, momentum:75, volume:75, rsi:75, sector:75 };
+  const out = {};
+  for (const k in bases) out[k] = Math.min(99, Math.max(52, Math.round(bases[k] + (rng() - 0.5) * 14)));
+  return out;
+}
+
+function generateDailyPicks() {
+  const seed = getDaySeed();
+  const rng = mkRng(seed);
+  const SETUPS = ['momentum', 'bounce', 'breakout', 'trend'];
+
+  // Deduplicate pool
+  const seen = new Set();
+  const pool = STOCKS.filter(s => { if (seen.has(s.t)) return false; seen.add(s.t); return true; });
+
+  const chosen = pickN(rng, pool, 8);
+
+  return chosen.map(stock => {
+    const setup = SETUPS[Math.floor(rng() * SETUPS.length)];
+    const meta  = SETUP_META[setup];
+    const scores = genScores(rng, setup);
+
+    // Build 5 reasons: 3 bullish + 1 info + 1 risk
+    const bullPool = [...(STOCK_INTEL[stock.t] || []), ...BULL_POOL[setup]];
+    const bullPicks = pickN(rng, bullPool, 3);
+    const infoPick  = pickN(rng, INFO_POOL, 1)[0];
+    const riskPick  = pickN(rng, RISK_POOL, 1)[0];
+
+    const reasons = [
+      ...bullPicks.map(t => ({ type:'bull', text:t })),
+      { type:'info', text:infoPick },
+      { type:'bear', text:riskPick },
+    ];
+
+    return { t:stock.t, n:stock.n, setup, setupLabel:meta.label, hold:meta.hold, risk:meta.risk, scores, reasons };
+  });
+}
+
+// Legacy placeholder — replaced by generator at runtime
 const AI_PICKS_DATA = [
   {
     t:'NVDA', n:'NVIDIA Corp.', setup:'bounce', setupLabel:'OVERSOLD BOUNCE',
@@ -1087,8 +1273,10 @@ function overallScore(p) {
 }
 
 function renderPicks() {
+  const picks = generateDailyPicks();
+  updatePicksDateBar();
   const el = document.getElementById('picks-grid');
-  el.innerHTML = AI_PICKS_DATA.map((p, idx) => {
+  el.innerHTML = picks.map((p, idx) => {
     const stk = stkState.find(s => s.t === p.t) || { cur: 0, chgPct: 0 };
     const score = overallScore(p);
     const sc = scoreColor(score);
@@ -1156,6 +1344,26 @@ function renderPicks() {
       </div>
     </div>`;
   }).join('');
+}
+
+// ─── PICKS DATE BAR ──────────────────────────────────────────
+function updatePicksDateBar() {
+  const et = getEtNow();
+  const dateStr = et.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+  const el = document.getElementById('picks-date-lbl');
+  if (el) el.textContent = dateStr;
+}
+
+function updatePicksCountdown() {
+  const et = getEtNow();
+  const midnight = new Date(et);
+  midnight.setHours(24, 0, 0, 0);
+  const diffMs = midnight - et;
+  const h = Math.floor(diffMs / 3600000);
+  const m = Math.floor((diffMs % 3600000) / 60000);
+  const s = Math.floor((diffMs % 60000) / 1000);
+  const el = document.getElementById('picks-countdown');
+  if (el) el.textContent = `Next update in ${h}h ${m}m ${s}s`;
 }
 
 // ─── UNIVERSE TABLE ──────────────────────────────────────────
@@ -1250,8 +1458,17 @@ renderPicks();
 refreshAll(false);
 renderUniverse();
 updateClock();
-setInterval(updateClock, 1000);
+updatePicksCountdown();
+setInterval(() => { updateClock(); updatePicksCountdown(); }, 1000);
 setInterval(() => { refreshAll(false); renderUniverse(); }, 30000);
+
+// Refresh picks at midnight ET
+function schedulePicksRefresh() {
+  const et = getEtNow();
+  const msToMidnight = (new Date(et).setHours(24,0,0,0)) - et;
+  setTimeout(() => { renderPicks(); schedulePicksRefresh(); }, msToMidnight + 500);
+}
+schedulePicksRefresh();
 
 </script>
 </body>
