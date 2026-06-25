@@ -370,6 +370,52 @@ td.mkt{font-size:11px;color:var(--muted)}
 .risk-low{background:rgba(16,185,129,0.1);color:var(--green);border:1px solid rgba(16,185,129,0.25)}
 .risk-med{background:rgba(245,158,11,0.1);color:var(--gold);border:1px solid rgba(245,158,11,0.25)}
 .risk-high{background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.25)}
+
+/* ── UNIVERSE SECTION ── */
+.universe-controls{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.universe-search{
+  flex:1;min-width:200px;max-width:320px;
+  background:var(--bg2);border:1px solid var(--border2);border-radius:8px;
+  padding:8px 12px 8px 34px;color:var(--text);font-family:'Inter',sans-serif;font-size:12px;
+  outline:none;transition:border-color 0.2s;position:relative;
+}
+.universe-search:focus{border-color:var(--neon)}
+.search-wrap{position:relative;flex:1;min-width:200px;max-width:320px}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.filter-pills{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.filter-pill{
+  padding:5px 12px;border-radius:20px;border:1px solid var(--border);
+  background:transparent;color:var(--muted);font-family:'Fira Code',monospace;font-size:10px;
+  cursor:pointer;transition:all 0.15s;white-space:nowrap;
+}
+.filter-pill:hover{border-color:var(--border2);color:var(--text)}
+.filter-pill.active{background:rgba(59,130,246,0.15);border-color:var(--neon);color:var(--neon)}
+.universe-count{font-family:'Fira Code',monospace;font-size:11px;color:var(--muted);white-space:nowrap}
+
+.universe-table{width:100%;border-collapse:collapse}
+.universe-table th{
+  padding:8px 12px;text-align:left;position:sticky;top:54px;z-index:5;
+  font-family:'Orbitron',sans-serif;font-size:9px;font-weight:600;letter-spacing:0.08em;
+  color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg1);
+  cursor:pointer;white-space:nowrap;user-select:none;
+}
+.universe-table th:hover{color:var(--neon)}
+.universe-table th .sort-arrow{margin-left:4px;opacity:0.4}
+.universe-table th.sorted .sort-arrow{opacity:1;color:var(--neon)}
+.universe-table td{padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.025);font-size:12px}
+.universe-table tr:hover td{background:rgba(59,130,246,0.04)}
+.universe-table tr:last-child td{border-bottom:none}
+.ut-sym{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:var(--text)}
+.ut-name{color:var(--muted);font-size:11px}
+.ut-price{font-family:'Fira Code',monospace;font-weight:500;color:var(--text)}
+.ut-chg{font-family:'Fira Code',monospace;font-weight:600}
+.ut-chg.up{color:var(--green)}
+.ut-chg.dn{color:var(--red)}
+.ut-sec{font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(59,130,246,0.08);color:var(--neon2);border:1px solid rgba(6,182,212,0.15);white-space:nowrap}
+.ut-mc{font-family:'Fira Code',monospace;font-size:11px;color:var(--muted)}
+.ut-vol{font-family:'Fira Code',monospace;font-size:11px;color:var(--neon2)}
+.ut-score{font-family:'Fira Code',monospace;font-size:11px;font-weight:600}
+.universe-scroll{max-height:520px;overflow-y:auto;border-radius:0 0 12px 12px}
 </style>
 </head>
 <body>
@@ -494,6 +540,43 @@ td.mkt{font-size:11px;color:var(--muted)}
     </div>
   </div>
 
+  <!-- STOCK UNIVERSE -->
+  <div>
+    <div class="sec-hdr">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      FULL STOCK UNIVERSE — <span id="universe-count-hdr">0</span> COMPANIES
+    </div>
+    <div class="panel">
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div class="universe-controls">
+          <div class="search-wrap">
+            <svg class="search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="universe-search" id="uni-search" type="text" placeholder="Search ticker or name…" oninput="filterUniverse()"/>
+          </div>
+          <div class="filter-pills" id="filter-pills"></div>
+          <span class="universe-count" id="uni-count"></span>
+        </div>
+      </div>
+      <div class="universe-scroll">
+        <table class="universe-table">
+          <thead>
+            <tr>
+              <th onclick="sortUniverse('t')" id="uh-t">#&nbsp;&nbsp;SYMBOL <span class="sort-arrow">↕</span></th>
+              <th onclick="sortUniverse('n')" id="uh-n">COMPANY <span class="sort-arrow">↕</span></th>
+              <th onclick="sortUniverse('s')" id="uh-s">SECTOR <span class="sort-arrow">↕</span></th>
+              <th onclick="sortUniverse('cur')" id="uh-cur">PRICE <span class="sort-arrow">↕</span></th>
+              <th onclick="sortUniverse('chgPct')" id="uh-chgPct">CHG % <span class="sort-arrow">↕</span></th>
+              <th onclick="sortUniverse('vol')" id="uh-vol">VOLUME <span class="sort-arrow">↕</span></th>
+              <th onclick="sortUniverse('mc')" id="uh-mc">MKT CAP <span class="sort-arrow">↕</span></th>
+              <th>SIGNAL</th>
+            </tr>
+          </thead>
+          <tbody id="universe-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /content -->
 
 <script>
@@ -506,42 +589,171 @@ const INDICES = [
   { sym:'DXY', name:'US DOLLAR',  price:104.23,  chg:0.12,  invert:false },
 ];
 
+// ~100 investable companies across all sectors
 const STOCKS = [
-  { t:'NVDA', n:'NVIDIA Corp.',       p:875.43,  s:'Technology',    mc:'$2.15T', avg:'42.8M' },
-  { t:'TSLA', n:'Tesla Inc.',         p:267.80,  s:'Cons. Disc.',   mc:'$851B',  avg:'98.4M' },
-  { t:'AAPL', n:'Apple Inc.',         p:228.52,  s:'Technology',    mc:'$3.48T', avg:'55.2M' },
-  { t:'META', n:'Meta Platforms',     p:558.91,  s:'Comm. Svcs.',   mc:'$1.42T', avg:'18.6M' },
-  { t:'MSFT', n:'Microsoft Corp.',    p:441.75,  s:'Technology',    mc:'$3.28T', avg:'20.1M' },
-  { t:'AMZN', n:'Amazon.com Inc.',    p:208.56,  s:'Cons. Disc.',   mc:'$2.21T', avg:'34.5M' },
-  { t:'AMD',  n:'Advanced Micro Dev.', p:152.30, s:'Technology',    mc:'$246B',  avg:'47.3M' },
-  { t:'GOOGL',n:'Alphabet Inc.',      p:185.23,  s:'Comm. Svcs.',   mc:'$2.29T', avg:'22.8M' },
-  { t:'NFLX', n:'Netflix Inc.',       p:685.20,  s:'Comm. Svcs.',   mc:'$293B',  avg:'5.1M'  },
-  { t:'CRM',  n:'Salesforce Inc.',    p:278.45,  s:'Technology',    mc:'$268B',  avg:'7.4M'  },
-  { t:'JPM',  n:'JPMorgan Chase',     p:248.90,  s:'Financials',    mc:'$711B',  avg:'8.9M'  },
-  { t:'BAC',  n:'Bank of America',    p:44.23,   s:'Financials',    mc:'$347B',  avg:'35.6M' },
-  { t:'GS',   n:'Goldman Sachs',      p:478.56,  s:'Financials',    mc:'$155B',  avg:'3.2M'  },
-  { t:'UNH',  n:'UnitedHealth Group', p:312.56,  s:'Healthcare',    mc:'$286B',  avg:'4.1M'  },
-  { t:'XOM',  n:'Exxon Mobil',        p:112.45,  s:'Energy',        mc:'$449B',  avg:'16.7M' },
-  { t:'JNJ',  n:'Johnson & Johnson',  p:152.34,  s:'Healthcare',    mc:'$363B',  avg:'7.8M'  },
-  { t:'V',    n:'Visa Inc.',          p:287.62,  s:'Financials',    mc:'$597B',  avg:'6.3M'  },
-  { t:'WMT',  n:'Walmart Inc.',       p:87.34,   s:'Cons. Staples', mc:'$702B',  avg:'12.4M' },
-  { t:'DIS',  n:'Walt Disney Co.',    p:112.87,  s:'Comm. Svcs.',   mc:'$207B',  avg:'11.2M' },
-  { t:'PYPL', n:'PayPal Holdings',    p:68.45,   s:'Technology',    mc:'$72B',   avg:'13.8M' },
+  // ── BIG TECH ──────────────────────────────────────────────
+  { t:'AAPL',  n:'Apple Inc.',              p:228.52,  s:'Technology',    mc:'$3.48T', avg:'55.2M' },
+  { t:'MSFT',  n:'Microsoft Corp.',         p:441.75,  s:'Technology',    mc:'$3.28T', avg:'20.1M' },
+  { t:'NVDA',  n:'NVIDIA Corp.',            p:875.43,  s:'Technology',    mc:'$2.15T', avg:'42.8M' },
+  { t:'GOOGL', n:'Alphabet Inc.',           p:185.23,  s:'Comm. Svcs.',   mc:'$2.29T', avg:'22.8M' },
+  { t:'META',  n:'Meta Platforms',          p:558.91,  s:'Comm. Svcs.',   mc:'$1.42T', avg:'18.6M' },
+  { t:'AMZN',  n:'Amazon.com Inc.',         p:208.56,  s:'Cons. Disc.',   mc:'$2.21T', avg:'34.5M' },
+  { t:'TSLA',  n:'Tesla Inc.',              p:267.80,  s:'EV / Auto',     mc:'$851B',  avg:'98.4M' },
+  // ── SEMICONDUCTORS ────────────────────────────────────────
+  { t:'AMD',   n:'Advanced Micro Devices',  p:152.30,  s:'Technology',    mc:'$246B',  avg:'47.3M' },
+  { t:'INTC',  n:'Intel Corp.',             p:21.45,   s:'Technology',    mc:'$91B',   avg:'42.1M' },
+  { t:'QCOM',  n:'Qualcomm Inc.',           p:168.90,  s:'Technology',    mc:'$186B',  avg:'8.7M'  },
+  { t:'AVGO',  n:'Broadcom Inc.',           p:187.43,  s:'Technology',    mc:'$878B',  avg:'12.3M' },
+  { t:'TXN',   n:'Texas Instruments',       p:178.23,  s:'Technology',    mc:'$162B',  avg:'4.8M'  },
+  { t:'MU',    n:'Micron Technology',       p:98.45,   s:'Technology',    mc:'$109B',  avg:'23.6M' },
+  { t:'AMAT',  n:'Applied Materials',       p:186.32,  s:'Technology',    mc:'$157B',  avg:'5.9M'  },
+  { t:'LRCX',  n:'Lam Research',            p:74.12,   s:'Technology',    mc:'$98B',   avg:'2.1M'  },
+  { t:'MRVL',  n:'Marvell Technology',      p:68.34,   s:'Technology',    mc:'$59B',   avg:'14.2M' },
+  { t:'ARM',   n:'Arm Holdings',            p:136.78,  s:'Technology',    mc:'$143B',  avg:'18.9M' },
+  { t:'SMCI',  n:'Super Micro Computer',    p:42.67,   s:'Technology',    mc:'$25B',   avg:'32.1M' },
+  { t:'ON',    n:'ON Semiconductor',        p:48.23,   s:'Technology',    mc:'$20B',   avg:'7.3M'  },
+  { t:'KLAC',  n:'KLA Corp.',               p:734.56,  s:'Technology',    mc:'$103B',  avg:'1.2M'  },
+  // ── SOFTWARE / SAAS ───────────────────────────────────────
+  { t:'CRM',   n:'Salesforce Inc.',         p:278.45,  s:'Software',      mc:'$268B',  avg:'7.4M'  },
+  { t:'ORCL',  n:'Oracle Corp.',            p:172.56,  s:'Software',      mc:'$473B',  avg:'9.2M'  },
+  { t:'ADBE',  n:'Adobe Inc.',              p:398.67,  s:'Software',      mc:'$176B',  avg:'3.9M'  },
+  { t:'NOW',   n:'ServiceNow Inc.',         p:978.34,  s:'Software',      mc:'$200B',  avg:'1.6M'  },
+  { t:'INTU',  n:'Intuit Inc.',             p:612.45,  s:'Software',      mc:'$172B',  avg:'1.8M'  },
+  { t:'PANW',  n:'Palo Alto Networks',      p:178.23,  s:'Software',      mc:'$117B',  avg:'4.5M'  },
+  { t:'CRWD',  n:'CrowdStrike Holdings',    p:398.56,  s:'Software',      mc:'$96B',   avg:'3.8M'  },
+  { t:'SNOW',  n:'Snowflake Inc.',          p:132.45,  s:'Software',      mc:'$44B',   avg:'6.2M'  },
+  { t:'PLTR',  n:'Palantir Technologies',   p:28.67,   s:'AI / Data',     mc:'$62B',   avg:'68.4M' },
+  { t:'MDB',   n:'MongoDB Inc.',            p:254.32,  s:'Software',      mc:'$18B',   avg:'2.4M'  },
+  { t:'DDOG',  n:'Datadog Inc.',            p:118.45,  s:'Software',      mc:'$38B',   avg:'3.1M'  },
+  { t:'NET',   n:'Cloudflare Inc.',         p:98.34,   s:'Software',      mc:'$32B',   avg:'5.6M'  },
+  { t:'WDAY',  n:'Workday Inc.',            p:228.67,  s:'Software',      mc:'$48B',   avg:'2.7M'  },
+  { t:'TEAM',  n:'Atlassian Corp.',         p:178.45,  s:'Software',      mc:'$45B',   avg:'1.9M'  },
+  { t:'FTNT',  n:'Fortinet Inc.',           p:72.34,   s:'Software',      mc:'$55B',   avg:'7.2M'  },
+  { t:'ZS',    n:'Zscaler Inc.',            p:178.90,  s:'Software',      mc:'$27B',   avg:'1.8M'  },
+  { t:'HUBS',  n:'HubSpot Inc.',            p:578.34,  s:'Software',      mc:'$28B',   avg:'0.7M'  },
+  { t:'GTLB',  n:'GitLab Inc.',             p:48.23,   s:'Software',      mc:'$8B',    avg:'2.3M'  },
+  { t:'AI',    n:'C3.ai Inc.',              p:24.67,   s:'AI / Data',     mc:'$3B',    avg:'9.4M'  },
+  { t:'IBM',   n:'IBM Corp.',               p:232.45,  s:'Software',      mc:'$215B',  avg:'4.2M'  },
+  { t:'SAP',   n:'SAP SE',                  p:218.34,  s:'Software',      mc:'$239B',  avg:'1.4M'  },
+  // ── APPS / CONSUMER TECH ──────────────────────────────────
+  { t:'NFLX',  n:'Netflix Inc.',            p:685.20,  s:'Streaming',     mc:'$293B',  avg:'5.1M'  },
+  { t:'SPOT',  n:'Spotify Technology',      p:378.45,  s:'Streaming',     mc:'$73B',   avg:'2.8M'  },
+  { t:'SNAP',  n:'Snap Inc.',               p:9.87,    s:'Social Media',  mc:'$16B',   avg:'42.6M' },
+  { t:'PINS',  n:'Pinterest Inc.',          p:28.34,   s:'Social Media',  mc:'$19B',   avg:'12.8M' },
+  { t:'RDDT',  n:'Reddit Inc.',             p:78.56,   s:'Social Media',  mc:'$13B',   avg:'8.4M'  },
+  { t:'RBLX',  n:'Roblox Corp.',            p:38.23,   s:'Gaming',        mc:'$22B',   avg:'11.2M' },
+  { t:'DUOL',  n:'Duolingo Inc.',           p:278.45,  s:'Apps',          mc:'$12B',   avg:'0.9M'  },
+  { t:'LYFT',  n:'Lyft Inc.',               p:14.23,   s:'Apps',          mc:'$5B',    avg:'12.4M' },
+  { t:'UBER',  n:'Uber Technologies',       p:78.56,   s:'Apps',          mc:'$164B',  avg:'16.8M' },
+  { t:'ABNB',  n:'Airbnb Inc.',             p:132.45,  s:'Apps',          mc:'$84B',   avg:'6.2M'  },
+  { t:'DASH',  n:'DoorDash Inc.',           p:168.23,  s:'Apps',          mc:'$47B',   avg:'4.8M'  },
+  // ── GAMING ────────────────────────────────────────────────
+  { t:'EA',    n:'Electronic Arts',         p:138.67,  s:'Gaming',        mc:'$37B',   avg:'2.4M'  },
+  { t:'TTWO',  n:'Take-Two Interactive',    p:178.23,  s:'Gaming',        mc:'$27B',   avg:'2.1M'  },
+  { t:'GME',   n:'GameStop Corp.',          p:24.56,   s:'Gaming',        mc:'$11B',   avg:'8.7M'  },
+  { t:'U',     n:'Unity Software',          p:17.34,   s:'Gaming',        mc:'$6B',    avg:'7.8M'  },
+  // ── STREAMING / MEDIA ─────────────────────────────────────
+  { t:'DIS',   n:'Walt Disney Co.',         p:112.87,  s:'Streaming',     mc:'$207B',  avg:'11.2M' },
+  { t:'WBD',   n:'Warner Bros. Discovery',  p:8.34,    s:'Streaming',     mc:'$20B',   avg:'18.6M' },
+  { t:'CMCSA', n:'Comcast Corp.',           p:38.45,   s:'Comm. Svcs.',   mc:'$148B',  avg:'22.3M' },
+  { t:'PARA',  n:'Paramount Global',        p:10.23,   s:'Streaming',     mc:'$7B',    avg:'14.2M' },
+  // ── E-COMMERCE ────────────────────────────────────────────
+  { t:'SHOP',  n:'Shopify Inc.',            p:98.34,   s:'E-Commerce',    mc:'$125B',  avg:'8.9M'  },
+  { t:'ETSY',  n:'Etsy Inc.',               p:48.67,   s:'E-Commerce',    mc:'$6B',    avg:'4.2M'  },
+  { t:'EBAY',  n:'eBay Inc.',               p:58.23,   s:'E-Commerce',    mc:'$32B',   avg:'5.8M'  },
+  { t:'MELI',  n:'MercadoLibre Inc.',       p:2178.45, s:'E-Commerce',    mc:'$108B',  avg:'0.4M'  },
+  { t:'BABA',  n:'Alibaba Group',           p:87.34,   s:'E-Commerce',    mc:'$213B',  avg:'18.4M' },
+  { t:'CHWY',  n:'Chewy Inc.',              p:28.67,   s:'E-Commerce',    mc:'$12B',   avg:'6.8M'  },
+  { t:'W',     n:'Wayfair Inc.',            p:34.23,   s:'E-Commerce',    mc:'$4B',    avg:'4.6M'  },
+  // ── FINTECH / CRYPTO ──────────────────────────────────────
+  { t:'PYPL',  n:'PayPal Holdings',         p:68.45,   s:'Fintech',       mc:'$72B',   avg:'13.8M' },
+  { t:'SQ',    n:'Block Inc.',              p:58.34,   s:'Fintech',       mc:'$36B',   avg:'8.6M'  },
+  { t:'COIN',  n:'Coinbase Global',         p:218.45,  s:'Fintech',       mc:'$55B',   avg:'12.7M' },
+  { t:'HOOD',  n:'Robinhood Markets',       p:24.67,   s:'Fintech',       mc:'$21B',   avg:'18.4M' },
+  { t:'SOFI',  n:'SoFi Technologies',       p:12.34,   s:'Fintech',       mc:'$12B',   avg:'24.6M' },
+  { t:'AFRM',  n:'Affirm Holdings',         p:38.67,   s:'Fintech',       mc:'$11B',   avg:'12.3M' },
+  { t:'V',     n:'Visa Inc.',               p:287.62,  s:'Fintech',       mc:'$597B',  avg:'6.3M'  },
+  { t:'MA',    n:'Mastercard Inc.',         p:478.34,  s:'Fintech',       mc:'$435B',  avg:'3.1M'  },
+  { t:'UPST',  n:'Upstart Holdings',        p:48.23,   s:'Fintech',       mc:'$4B',    avg:'6.4M'  },
+  // ── EV / CLEAN TECH ───────────────────────────────────────
+  { t:'RIVN',  n:'Rivian Automotive',       p:12.45,   s:'EV / Auto',     mc:'$13B',   avg:'28.4M' },
+  { t:'LCID',  n:'Lucid Group Inc.',        p:3.23,    s:'EV / Auto',     mc:'$7B',    avg:'38.2M' },
+  { t:'NIO',   n:'NIO Inc.',                p:4.78,    s:'EV / Auto',     mc:'$10B',   avg:'52.4M' },
+  { t:'LI',    n:'Li Auto Inc.',            p:22.34,   s:'EV / Auto',     mc:'$23B',   avg:'14.6M' },
+  { t:'XPEV',  n:'XPeng Inc.',              p:14.56,   s:'EV / Auto',     mc:'$12B',   avg:'18.2M' },
+  { t:'F',     n:'Ford Motor Co.',          p:11.23,   s:'EV / Auto',     mc:'$44B',   avg:'48.6M' },
+  { t:'GM',    n:'General Motors Co.',      p:48.67,   s:'EV / Auto',     mc:'$50B',   avg:'14.8M' },
+  { t:'CHPT',  n:'ChargePoint Holdings',    p:1.78,    s:'EV / Auto',     mc:'$1B',    avg:'18.6M' },
+  // ── TELECOM ───────────────────────────────────────────────
+  { t:'T',     n:'AT&T Inc.',               p:22.34,   s:'Telecom',       mc:'$160B',  avg:'42.8M' },
+  { t:'VZ',    n:'Verizon Comm.',           p:42.67,   s:'Telecom',       mc:'$179B',  avg:'18.6M' },
+  { t:'TMUS',  n:'T-Mobile US Inc.',        p:212.45,  s:'Telecom',       mc:'$247B',  avg:'4.3M'  },
+  // ── FINANCIALS ────────────────────────────────────────────
+  { t:'JPM',   n:'JPMorgan Chase',          p:248.90,  s:'Financials',    mc:'$711B',  avg:'8.9M'  },
+  { t:'BAC',   n:'Bank of America',         p:44.23,   s:'Financials',    mc:'$347B',  avg:'35.6M' },
+  { t:'GS',    n:'Goldman Sachs',           p:478.56,  s:'Financials',    mc:'$155B',  avg:'3.2M'  },
+  { t:'MS',    n:'Morgan Stanley',          p:112.34,  s:'Financials',    mc:'$189B',  avg:'9.6M'  },
+  { t:'WFC',   n:'Wells Fargo & Co.',       p:68.23,   s:'Financials',    mc:'$232B',  avg:'18.4M' },
+  { t:'BLK',   n:'BlackRock Inc.',          p:978.45,  s:'Financials',    mc:'$147B',  avg:'0.8M'  },
+  { t:'SCHW',  n:'Charles Schwab Corp.',    p:78.34,   s:'Financials',    mc:'$141B',  avg:'9.3M'  },
+  { t:'AXP',   n:'American Express',        p:278.56,  s:'Financials',    mc:'$199B',  avg:'2.8M'  },
+  { t:'C',     n:'Citigroup Inc.',          p:68.45,   s:'Financials',    mc:'$132B',  avg:'16.4M' },
+  { t:'WFC',   n:'Wells Fargo & Co.',       p:68.23,   s:'Financials',    mc:'$232B',  avg:'18.4M' },
+  // ── HEALTHCARE ────────────────────────────────────────────
+  { t:'UNH',   n:'UnitedHealth Group',      p:312.56,  s:'Healthcare',    mc:'$286B',  avg:'4.1M'  },
+  { t:'JNJ',   n:'Johnson & Johnson',       p:152.34,  s:'Healthcare',    mc:'$363B',  avg:'7.8M'  },
+  { t:'ISRG',  n:'Intuitive Surgical',      p:478.23,  s:'Healthcare',    mc:'$170B',  avg:'1.2M'  },
+  { t:'VEEV',  n:'Veeva Systems',           p:178.45,  s:'Healthcare',    mc:'$29B',   avg:'1.0M'  },
+  { t:'HIMS',  n:'Hims & Hers Health',      p:18.67,   s:'Healthcare',    mc:'$4B',    avg:'8.6M'  },
+  { t:'MDT',   n:'Medtronic PLC',           p:82.34,   s:'Healthcare',    mc:'$110B',  avg:'6.8M'  },
+  { t:'ABT',   n:'Abbott Laboratories',     p:128.45,  s:'Healthcare',    mc:'$223B',  avg:'4.9M'  },
+  { t:'TDOC',  n:'Teladoc Health',          p:9.78,    s:'Healthcare',    mc:'$2B',    avg:'8.2M'  },
+  // ── CONSUMER / RETAIL ─────────────────────────────────────
+  { t:'WMT',   n:'Walmart Inc.',            p:87.34,   s:'Retail',        mc:'$702B',  avg:'12.4M' },
+  { t:'COST',  n:'Costco Wholesale',        p:878.34,  s:'Retail',        mc:'$389B',  avg:'2.3M'  },
+  { t:'NKE',   n:'Nike Inc.',               p:72.45,   s:'Cons. Disc.',   mc:'$109B',  avg:'9.8M'  },
+  { t:'SBUX',  n:'Starbucks Corp.',         p:82.34,   s:'Cons. Disc.',   mc:'$95B',   avg:'8.7M'  },
+  { t:'MCD',   n:"McDonald's Corp.",        p:278.45,  s:'Cons. Disc.',   mc:'$200B',  avg:'3.4M'  },
+  { t:'KO',    n:'Coca-Cola Co.',           p:68.23,   s:'Cons. Staples', mc:'$294B',  avg:'12.8M' },
+  { t:'PEP',   n:'PepsiCo Inc.',            p:154.23,  s:'Cons. Staples', mc:'$212B',  avg:'5.4M'  },
+  { t:'LULU',  n:'Lululemon Athletica',     p:278.34,  s:'Cons. Disc.',   mc:'$34B',   avg:'2.8M'  },
+  // ── AEROSPACE / DEFENSE ───────────────────────────────────
+  { t:'LMT',   n:'Lockheed Martin',         p:478.23,  s:'Defense',       mc:'$113B',  avg:'0.9M'  },
+  { t:'RTX',   n:'RTX Corp.',               p:128.45,  s:'Defense',       mc:'$171B',  avg:'4.6M'  },
+  { t:'BA',    n:'Boeing Co.',              p:178.67,  s:'Defense',       mc:'$110B',  avg:'8.2M'  },
+  { t:'NOC',   n:'Northrop Grumman',        p:478.56,  s:'Defense',       mc:'$73B',   avg:'0.7M'  },
+  { t:'GD',    n:'General Dynamics',        p:278.45,  s:'Defense',       mc:'$76B',   avg:'1.0M'  },
+  // ── ENERGY ────────────────────────────────────────────────
+  { t:'XOM',   n:'Exxon Mobil',             p:112.45,  s:'Energy',        mc:'$449B',  avg:'16.7M' },
+  { t:'CVX',   n:'Chevron Corp.',           p:145.67,  s:'Energy',        mc:'$274B',  avg:'9.3M'  },
+  { t:'COP',   n:'ConocoPhillips',          p:108.34,  s:'Energy',        mc:'$143B',  avg:'5.8M'  },
+  { t:'OXY',   n:'Occidental Petroleum',    p:48.23,   s:'Energy',        mc:'$44B',   avg:'14.2M' },
+  { t:'SLB',   n:'SLB (Schlumberger)',      p:38.45,   s:'Energy',        mc:'$54B',   avg:'8.6M'  },
 ];
 
 const SIGNALS_DATA = [
-  { t:'NVDA', sig:'RSI Oversold',    type:'bull', detail:'RSI 28.4 — potential bounce',     str:'STRONG' },
-  { t:'AAPL', sig:'Golden Cross',    type:'bull', detail:'50MA crossed above 200MA',         str:'STRONG' },
-  { t:'META', sig:'MACD Bullish X',  type:'bull', detail:'MACD crossed signal line ↑',      str:'MOD'    },
-  { t:'AMD',  sig:'Volume Surge',    type:'bull', detail:'3.4× avg volume detected',        str:'STRONG' },
-  { t:'GOOGL',sig:'Breakout',        type:'bull', detail:'Above 52-week high resistance',   str:'MOD'    },
-  { t:'TSLA', sig:'RSI Overbought',  type:'bear', detail:'RSI 73.2 — extended, watch out',  str:'MOD'    },
-  { t:'DIS',  sig:'Death Cross',     type:'bear', detail:'50MA crossed below 200MA',         str:'STRONG' },
-  { t:'PYPL', sig:'MACD Bearish X',  type:'bear', detail:'MACD crossed signal line ↓',      str:'MOD'    },
-  { t:'BAC',  sig:'Breakdown',       type:'bear', detail:'Below key support $43.50',        str:'MOD'    },
-  { t:'V',    sig:'Consolidation',   type:'neut', detail:'Tight range — breakout pending',  str:'WATCH'  },
-  { t:'WMT',  sig:'Squeeze Setup',   type:'neut', detail:'BB width at 6-month low',         str:'WATCH'  },
-  { t:'XOM',  sig:'Vol Divergence',  type:'neut', detail:'Price ↑ vol declining',           str:'WATCH'  },
+  { t:'NVDA',  sig:'RSI Oversold',    type:'bull', detail:'RSI 28.4 — deeply oversold, mean-reversion signal',  str:'STRONG' },
+  { t:'AAPL',  sig:'Golden Cross',    type:'bull', detail:'50MA crossed above 200MA — long-term bullish trend',  str:'STRONG' },
+  { t:'META',  sig:'MACD Bullish X',  type:'bull', detail:'MACD crossed signal line ↑ on daily chart',          str:'STRONG' },
+  { t:'AMD',   sig:'Volume Surge',    type:'bull', detail:'3.4× avg volume — institutional accumulation likely', str:'STRONG' },
+  { t:'GOOGL', sig:'52W Breakout',    type:'bull', detail:'Broke above 52-week high resistance at $183',         str:'MOD'    },
+  { t:'PLTR',  sig:'AI Catalyst',     type:'bull', detail:'New government contract — revenue surprise likely',   str:'STRONG' },
+  { t:'SHOP',  sig:'Bounce Setup',    type:'bull', detail:'Bouncing off 200MA with rising volume',               str:'MOD'    },
+  { t:'COIN',  sig:'Crypto Corr.',    type:'bull', detail:'BTC rally correlation — follow-through likely',       str:'MOD'    },
+  { t:'ARM',   sig:'Momentum',        type:'bull', detail:'AI chip licensing deals boosting outlook',            str:'MOD'    },
+  { t:'UBER',  sig:'MACD Bullish X',  type:'bull', detail:'Profitability pivot driving fresh momentum',          str:'MOD'    },
+  { t:'TSLA',  sig:'RSI Overbought',  type:'bear', detail:'RSI 73.2 — overextended, pullback risk',              str:'MOD'    },
+  { t:'DIS',   sig:'Death Cross',     type:'bear', detail:'50MA crossed below 200MA — bearish long-term trend',  str:'STRONG' },
+  { t:'PYPL',  sig:'MACD Bearish X',  type:'bear', detail:'MACD crossed below signal line on daily',             str:'MOD'    },
+  { t:'INTC',  sig:'Breakdown',       type:'bear', detail:'Below key support $22 — market share loss risk',      str:'STRONG' },
+  { t:'SNAP',  sig:'Death Spiral',    type:'bear', detail:'User growth declining, ad revenue miss',               str:'STRONG' },
+  { t:'WBD',   sig:'Downtrend',       type:'bear', detail:'Lower highs / lower lows — avoid until reversal',     str:'MOD'    },
+  { t:'LCID',  sig:'RSI Oversold',    type:'bear', detail:'RSI low but trend broken — falling knife caution',    str:'MOD'    },
+  { t:'V',     sig:'Consolidation',   type:'neut', detail:'Tight range for 3 weeks — directional break pending', str:'WATCH'  },
+  { t:'WMT',   sig:'BB Squeeze',      type:'neut', detail:'Bollinger Band width at 6-month low — big move ahead',str:'WATCH'  },
+  { t:'XOM',   sig:'Vol Divergence',  type:'neut', detail:'Price rising but volume declining — watch closely',   str:'WATCH'  },
+  { t:'IBM',   sig:'Base Building',   type:'neut', detail:'Consolidating gains — awaiting next catalyst',        str:'WATCH'  },
+  { t:'NKE',   sig:'Reversal Test',   type:'neut', detail:'Testing key $72 support — bounce or break soon',      str:'WATCH'  },
 ];
 
 const SECTORS = [
@@ -772,8 +984,8 @@ const AI_PICKS_DATA = [
       { type:'bull', text:'RSI hit 28 — deeply oversold, mean-reversion historically strong here' },
       { type:'bull', text:'Volume 3.4× above 20-day average — institutional accumulation signal' },
       { type:'bull', text:'AI/semiconductor sector leading SPX by +1.9% this week' },
-      { type:'info', text:'Price sitting at 200-day moving average — key historical support' },
-      { type:'bear', text:'Watch $840 — break below invalidates the setup' },
+      { type:'info', text:'Price at 200-day moving average — key historical support level' },
+      { type:'bear', text:'Watch $840 — break below invalidates the bounce setup' },
     ]
   },
   {
@@ -781,11 +993,11 @@ const AI_PICKS_DATA = [
     hold:'2–4 weeks', risk:'low',
     scores:{ trend:94, momentum:81, volume:70, rsi:58, sector:85 },
     reasons:[
-      { type:'bull', text:'Golden Cross confirmed — 50MA crossed above 200MA (rare long-term signal)' },
-      { type:'bull', text:'RSI at 58 — momentum healthy, not yet overbought, room to run' },
-      { type:'bull', text:'Consecutive higher highs and higher lows for 6 straight sessions' },
-      { type:'info', text:'Low beta (0.83) makes this a lower-risk momentum play vs peers' },
-      { type:'bear', text:'Resistance at $235 — key level to watch for potential stall' },
+      { type:'bull', text:'Golden Cross confirmed — 50MA crossed above 200MA, rare long-term signal' },
+      { type:'bull', text:'RSI at 58 — healthy momentum, not overbought, room to run' },
+      { type:'bull', text:'6 consecutive higher highs — clean uptrend structure intact' },
+      { type:'info', text:'Low beta (0.83) — lower volatility relative to NASDAQ peers' },
+      { type:'bear', text:'Resistance at $235 — watch for stall or rejection at that level' },
     ]
   },
   {
@@ -793,11 +1005,11 @@ const AI_PICKS_DATA = [
     hold:'1–5 days', risk:'high',
     scores:{ trend:76, momentum:91, volume:98, rsi:66, sector:88 },
     reasons:[
-      { type:'bull', text:'Breaking out of 3-week tight consolidation range on 4× avg volume' },
-      { type:'bull', text:'Momentum score highest in semiconductor peer group today' },
-      { type:'bull', text:'Short interest at 2.1% — low overhang, fewer headwinds' },
-      { type:'info', text:'AI chip demand catalyst: competing directly with NVDA in data center' },
-      { type:'bear', text:'High volatility name — wide stop needed, sizing down recommended' },
+      { type:'bull', text:'Breaking out of 3-week tight consolidation on 4× average volume' },
+      { type:'bull', text:'Highest momentum score in the semiconductor peer group today' },
+      { type:'bull', text:'Short interest only 2.1% — minimal overhead selling pressure' },
+      { type:'info', text:'AI data center chip demand growing — direct NVDA competitor' },
+      { type:'bear', text:'High volatility — use wider stops, reduce position size accordingly' },
     ]
   },
   {
@@ -806,10 +1018,58 @@ const AI_PICKS_DATA = [
     scores:{ trend:89, momentum:87, volume:74, rsi:61, sector:80 },
     reasons:[
       { type:'bull', text:'MACD bullish crossover confirmed on daily chart — fresh buy signal' },
-      { type:'bull', text:'Outperforming S&P 500 by +3.2% over past 10 sessions' },
-      { type:'bull', text:'Ad revenue growth trend intact — strong fundamental tailwind' },
-      { type:'info', text:'Institutional ownership increased +4.3% last quarter (13F data)' },
-      { type:'bear', text:'Regulatory risk in EU — binary event risk if any headlines drop' },
+      { type:'bull', text:'Outperforming S&P 500 by +3.2% over the past 10 sessions' },
+      { type:'bull', text:'Ad revenue growth acceleration — Reels monetization strong' },
+      { type:'info', text:'Institutional ownership up +4.3% last quarter per 13F filings' },
+      { type:'bear', text:'EU regulatory risk — potential ad targeting restrictions' },
+    ]
+  },
+  {
+    t:'PLTR', n:'Palantir Technologies', setup:'breakout', setupLabel:'AI BREAKOUT',
+    hold:'1–2 weeks', risk:'high',
+    scores:{ trend:82, momentum:94, volume:89, rsi:69, sector:92 },
+    reasons:[
+      { type:'bull', text:'New $400M US Army AI contract — massive government revenue catalyst' },
+      { type:'bull', text:'AIP (AI Platform) commercial revenue growing 55% YoY' },
+      { type:'bull', text:'Added to S&P 500 index — forced institutional buying pressure' },
+      { type:'info', text:'High short interest 8.4% — short squeeze potential on any rally' },
+      { type:'bear', text:'RSI approaching 70 — overbought conditions developing, take profits early' },
+    ]
+  },
+  {
+    t:'MSFT', n:'Microsoft Corp.', setup:'trend', setupLabel:'DEFENSIVE GROWTH',
+    hold:'4–8 weeks', risk:'low',
+    scores:{ trend:91, momentum:78, volume:65, rsi:55, sector:87 },
+    reasons:[
+      { type:'bull', text:'Azure cloud growing 29% YoY — highest growth in 6 quarters' },
+      { type:'bull', text:'Copilot AI monetization just getting started — multi-year tailwind' },
+      { type:'bull', text:'Steady institutional accumulation — 18 consecutive weeks of inflows' },
+      { type:'info', text:'$60B buyback program active — earnings per share accretion ongoing' },
+      { type:'bear', text:'Heavy weight — needs broad market participation to push higher' },
+    ]
+  },
+  {
+    t:'SHOP', n:'Shopify Inc.', setup:'bounce', setupLabel:'RECOVERY PLAY',
+    hold:'1–3 weeks', risk:'med',
+    scores:{ trend:71, momentum:80, volume:76, rsi:38, sector:74 },
+    reasons:[
+      { type:'bull', text:'RSI bouncing from 36 — historically strong mean-reversion setup' },
+      { type:'bull', text:'E-commerce GMV growing 24% — merchant count at all-time high' },
+      { type:'bull', text:'Held $90 support perfectly for 3 consecutive sessions' },
+      { type:'info', text:'Removed logistics business — higher margins expected going forward' },
+      { type:'bear', text:'Macro sensitivity — consumer spending slowdown could weigh on revenue' },
+    ]
+  },
+  {
+    t:'COIN', n:'Coinbase Global', setup:'momentum', setupLabel:'CRYPTO MOMENTUM',
+    hold:'3–7 days', risk:'high',
+    scores:{ trend:78, momentum:88, volume:92, rsi:63, sector:85 },
+    reasons:[
+      { type:'bull', text:'BTC hitting new highs — Coinbase trading volume surging 3× average' },
+      { type:'bull', text:'ETF custody revenue from spot Bitcoin ETFs growing rapidly' },
+      { type:'bull', text:'Base layer 2 network fees adding new diversified revenue stream' },
+      { type:'info', text:'Regulatory clarity improving — favorable crypto legislation in Senate' },
+      { type:'bear', text:'Extreme crypto volatility — position size small, stops tight required' },
     ]
   },
 ];
@@ -898,13 +1158,100 @@ function renderPicks() {
   }).join('');
 }
 
+// ─── UNIVERSE TABLE ──────────────────────────────────────────
+const ALL_SECTORS = ['All', ...new Set(STOCKS.map(s => s.s))].sort((a,b) => a==='All'?-1:b==='All'?1:a.localeCompare(b));
+let uniFilter = 'All';
+let uniSearch = '';
+let uniSort = { key:'vol', dir:-1 };
+let uniDeduped = [];
+
+function buildUniverse() {
+  // Deduplicate by ticker
+  const seen = new Set();
+  uniDeduped = STOCKS.filter(s => { if(seen.has(s.t)) return false; seen.add(s.t); return true; });
+}
+
+function initFilterPills() {
+  const el = document.getElementById('filter-pills');
+  el.innerHTML = ALL_SECTORS.map(sec =>
+    `<button class="filter-pill${sec==='All'?' active':''}" onclick="setFilter('${sec}')">${sec}</button>`
+  ).join('');
+}
+
+function setFilter(sec) {
+  uniFilter = sec;
+  document.querySelectorAll('.filter-pill').forEach(p => {
+    p.classList.toggle('active', p.textContent === sec);
+  });
+  renderUniverse();
+}
+
+function filterUniverse() {
+  uniSearch = document.getElementById('uni-search').value.toLowerCase();
+  renderUniverse();
+}
+
+function sortUniverse(key) {
+  if(uniSort.key === key) uniSort.dir *= -1;
+  else { uniSort.key = key; uniSort.dir = -1; }
+  document.querySelectorAll('.universe-table th').forEach(th => th.classList.remove('sorted'));
+  const thEl = document.getElementById('uh-' + key);
+  if(thEl) { thEl.classList.add('sorted'); thEl.querySelector('.sort-arrow').textContent = uniSort.dir > 0 ? '↑' : '↓'; }
+  renderUniverse();
+}
+
+function getSignal(ticker) {
+  const sig = SIGNALS_DATA.find(s => s.t === ticker);
+  if(!sig) return '';
+  const cls = sig.type === 'bull' ? 'bull' : sig.type === 'bear' ? 'bear' : 'neut';
+  return `<span class="sig-label ${cls}" style="font-size:9px">${sig.sig}</span>`;
+}
+
+function renderUniverse() {
+  let list = uniDeduped.map(s => {
+    const st = stkState.find(x => x.t === s.t) || { cur: s.p, chgPct: 0, vol: 10 };
+    return { ...s, cur: st.cur, chgPct: st.chgPct, vol: st.vol };
+  });
+  if(uniFilter !== 'All') list = list.filter(s => s.s === uniFilter);
+  if(uniSearch) list = list.filter(s => s.t.toLowerCase().includes(uniSearch) || s.n.toLowerCase().includes(uniSearch));
+  list.sort((a, b) => {
+    let av = a[uniSort.key], bv = b[uniSort.key];
+    if(typeof av === 'string') return uniSort.dir * av.localeCompare(bv);
+    return uniSort.dir * (av - bv);
+  });
+
+  const hdr = document.getElementById('universe-count-hdr');
+  const cnt = document.getElementById('uni-count');
+  if(hdr) hdr.textContent = list.length;
+  if(cnt) cnt.textContent = list.length + ' shown';
+
+  const tbody = document.getElementById('universe-tbody');
+  tbody.innerHTML = list.map((s, i) => {
+    const up = s.chgPct >= 0;
+    const cls = up ? 'up' : 'dn';
+    return `<tr>
+      <td style="color:var(--muted);font-family:'Fira Code',monospace;font-size:10px">${i+1}&nbsp;&nbsp;<span class="ut-sym">${s.t}</span></td>
+      <td class="ut-name">${s.n}</td>
+      <td><span class="ut-sec">${s.s}</span></td>
+      <td class="ut-price">$${fmt(s.cur)}</td>
+      <td class="ut-chg ${cls}">${fmtChg(s.chgPct)}%</td>
+      <td class="ut-vol">${fmtVol(s.vol)}</td>
+      <td class="ut-mc">${s.mc}</td>
+      <td>${getSignal(s.t)}</td>
+    </tr>`;
+  }).join('');
+}
+
 // ─── INIT ────────────────────────────────────────────────────
+buildUniverse();
+initFilterPills();
 renderSignals();
 renderPicks();
 refreshAll(false);
+renderUniverse();
 updateClock();
 setInterval(updateClock, 1000);
-setInterval(() => refreshAll(false), 30000);
+setInterval(() => { refreshAll(false); renderUniverse(); }, 30000);
 
 </script>
 </body>
