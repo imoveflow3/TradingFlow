@@ -416,6 +416,10 @@ td.mkt{font-size:11px;color:var(--muted)}
 .ut-vol{font-family:'Fira Code',monospace;font-size:11px;color:var(--neon2)}
 .ut-score{font-family:'Fira Code',monospace;font-size:11px;font-weight:600}
 .universe-scroll{max-height:520px;overflow-y:auto;border-radius:0 0 12px 12px}
+.star-btn{background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:2px 4px;transition:all 0.15s;line-height:1}
+.star-btn:hover{color:var(--gold);transform:scale(1.2)}
+.star-btn.starred{color:var(--gold)}
+.filter-pill.watch-pill.active{background:rgba(245,158,11,0.15);border-color:var(--gold);color:var(--gold)}
 </style>
 </head>
 <body>
@@ -429,7 +433,7 @@ td.mkt{font-size:11px;color:var(--muted)}
   <div>
     <div class="topbar-title">MARKET SCANNER</div>
   </div>
-  <div class="topbar-sub">Live Data Simulation</div>
+  <div class="topbar-sub" id="data-mode-lbl" style="font-family:'Fira Code',monospace;font-size:10px">CONNECTING…</div>
   <div class="topbar-spacer"></div>
   <div class="mkt-status">
     <div class="pulse-dot" id="mkt-pulse"></div>
@@ -449,7 +453,7 @@ td.mkt{font-size:11px;color:var(--muted)}
 <!-- DISCLAIMER -->
 <div class="disclaimer">
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-  <span><strong>Educational / Informational Use Only.</strong> This scanner displays simulated market data for demonstration. Not financial advice. Always do your own research before trading.</span>
+  <span><strong>Educational / Informational Use Only.</strong> Market data may be delayed; signals and picks are algorithmic screening, not financial advice. Always do your own research. <a href="disclaimer.html" style="color:var(--gold);text-decoration:underline">Full disclaimer</a></span>
 </div>
 
 <!-- MAIN CONTENT -->
@@ -822,6 +826,55 @@ function updateMarketStatus() {
   }
 }
 
+// ─── LIVE DATA (Yahoo Finance via /api/quotes proxy) ─────────
+let liveMode = false;
+const IDX_SYMBOL_MAP = { SPX:'^GSPC', NDX:'^NDX', DJI:'^DJI', VIX:'^VIX', DXY:'DX-Y.NYB' };
+
+async function fetchLiveQuotes() {
+  try {
+    const stockSyms = [...new Set(STOCKS.map(s => s.t))];
+    const idxSyms = Object.values(IDX_SYMBOL_MAP);
+    const all = [...idxSyms, ...stockSyms].join(',');
+    const res = await fetch('/api/quotes?symbols=' + encodeURIComponent(all));
+    if (!res.ok) throw new Error('quotes api ' + res.status);
+    const { quotes } = await res.json();
+    if (!quotes || !Object.keys(quotes).length) throw new Error('empty quotes');
+
+    let applied = 0;
+    stkState.forEach(s => {
+      const q = quotes[s.t];
+      if (!q || q.price == null) return;
+      s.cur = q.price;
+      s.chgPct = q.changePct || 0;
+      s.chgAbs = q.prevClose ? q.price - q.prevClose : 0;
+      if (q.volume) s.vol = q.volume / 1e6;
+      applied++;
+    });
+    idxState.forEach(s => {
+      const q = quotes[IDX_SYMBOL_MAP[s.sym]];
+      if (!q || q.price == null) return;
+      s.cur = q.price;
+      s.curChg = q.changePct || 0;
+    });
+
+    if (applied > 10) {
+      liveMode = true;
+      setDataModeLabel(true);
+      renderIndices(); renderMovers(); renderActive(); renderPicks(); renderUniverse();
+    }
+  } catch (e) {
+    // stay in / fall back to simulation
+    if (!liveMode) setDataModeLabel(false);
+  }
+}
+
+function setDataModeLabel(live) {
+  const el = document.getElementById('data-mode-lbl');
+  if (!el) return;
+  el.textContent = live ? 'LIVE MARKET DATA' : 'SIMULATED DATA';
+  el.style.color = live ? 'var(--green)' : 'var(--gold)';
+}
+
 // ─── RANDOMISE PRICES ────────────────────────────────────────
 function jitter(pct, mag=0.12) { return pct + (Math.random()-0.5)*mag; }
 
@@ -971,7 +1024,7 @@ function refreshAll(animate=true) {
     btn.classList.add('spinning');
     setTimeout(() => btn.classList.remove('spinning'), 500);
   }
-  updatePrices();
+  if (!liveMode) updatePrices(); // jitter only while simulating
   renderIndices();
   renderMovers();
   renderSectors();
@@ -1366,6 +1419,17 @@ function updatePicksCountdown() {
   if (el) el.textContent = `Next update in ${h}h ${m}m ${s}s`;
 }
 
+// ─── WATCHLIST (localStorage) ────────────────────────────────
+let watchlist = new Set();
+try { watchlist = new Set(JSON.parse(localStorage.getItem('tf_watchlist') || '[]')); } catch(e) {}
+
+function toggleWatch(ticker) {
+  if (watchlist.has(ticker)) watchlist.delete(ticker);
+  else watchlist.add(ticker);
+  try { localStorage.setItem('tf_watchlist', JSON.stringify([...watchlist])); } catch(e) {}
+  renderUniverse();
+}
+
 // ─── UNIVERSE TABLE ──────────────────────────────────────────
 const ALL_SECTORS = ['All', ...new Set(STOCKS.map(s => s.s))].sort((a,b) => a==='All'?-1:b==='All'?1:a.localeCompare(b));
 let uniFilter = 'All';
@@ -1381,9 +1445,10 @@ function buildUniverse() {
 
 function initFilterPills() {
   const el = document.getElementById('filter-pills');
-  el.innerHTML = ALL_SECTORS.map(sec =>
-    `<button class="filter-pill${sec==='All'?' active':''}" onclick="setFilter('${sec}')">${sec}</button>`
-  ).join('');
+  el.innerHTML = `<button class="filter-pill watch-pill" onclick="setFilter('★ Watchlist')">★ Watchlist</button>`
+    + ALL_SECTORS.map(sec =>
+      `<button class="filter-pill${sec==='All'?' active':''}" onclick="setFilter('${sec}')">${sec}</button>`
+    ).join('');
 }
 
 function setFilter(sec) {
@@ -1420,7 +1485,8 @@ function renderUniverse() {
     const st = stkState.find(x => x.t === s.t) || { cur: s.p, chgPct: 0, vol: 10 };
     return { ...s, cur: st.cur, chgPct: st.chgPct, vol: st.vol };
   });
-  if(uniFilter !== 'All') list = list.filter(s => s.s === uniFilter);
+  if(uniFilter === '★ Watchlist') list = list.filter(s => watchlist.has(s.t));
+  else if(uniFilter !== 'All') list = list.filter(s => s.s === uniFilter);
   if(uniSearch) list = list.filter(s => s.t.toLowerCase().includes(uniSearch) || s.n.toLowerCase().includes(uniSearch));
   list.sort((a, b) => {
     let av = a[uniSort.key], bv = b[uniSort.key];
@@ -1437,8 +1503,9 @@ function renderUniverse() {
   tbody.innerHTML = list.map((s, i) => {
     const up = s.chgPct >= 0;
     const cls = up ? 'up' : 'dn';
+    const starred = watchlist.has(s.t);
     return `<tr>
-      <td style="color:var(--muted);font-family:'Fira Code',monospace;font-size:10px">${i+1}&nbsp;&nbsp;<span class="ut-sym">${s.t}</span></td>
+      <td style="white-space:nowrap"><button class="star-btn${starred?' starred':''}" onclick="toggleWatch('${s.t}')" title="${starred?'Remove from':'Add to'} watchlist">${starred?'★':'☆'}</button><span style="color:var(--muted);font-family:'Fira Code',monospace;font-size:10px">${i+1}</span>&nbsp;&nbsp;<span class="ut-sym">${s.t}</span></td>
       <td class="ut-name">${s.n}</td>
       <td><span class="ut-sec">${s.s}</span></td>
       <td class="ut-price">$${fmt(s.cur)}</td>
@@ -1459,8 +1526,10 @@ refreshAll(false);
 renderUniverse();
 updateClock();
 updatePicksCountdown();
+fetchLiveQuotes();
 setInterval(() => { updateClock(); updatePicksCountdown(); }, 1000);
 setInterval(() => { refreshAll(false); renderUniverse(); }, 30000);
+setInterval(fetchLiveQuotes, 60000); // real quotes every 60s (edge-cached)
 
 // Refresh picks at midnight ET
 function schedulePicksRefresh() {

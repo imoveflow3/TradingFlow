@@ -32,10 +32,7 @@ const _fbDb   = firebase.firestore();
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-/* ── SOURCE PROTECTION ── */
-body,body *{-webkit-user-select:none!important;-moz-user-select:none!important;-ms-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}
-input,textarea,[contenteditable="true"]{-webkit-user-select:text!important;-moz-user-select:text!important;user-select:text!important}
-img{-webkit-user-drag:none;user-drag:none;pointer-events:none}
+img{-webkit-user-drag:none;user-drag:none}
 :root{
   --bg:#060d1c;
   --bg1:#0a1628;
@@ -4638,8 +4635,9 @@ body.light .profile-field-row{background:rgba(0,0,0,0.03);border-color:rgba(0,0,
   }
   #side-nav:hover{width:100%!important;box-shadow:0 -4px 24px rgba(0,0,0,0.5)}
   .snav-brand{display:none}
-  .snav-links{flex-direction:row;padding:0;gap:0;justify-content:space-around;align-items:center;height:100%;flex:1}
-  .nav-btn{flex-direction:column;gap:3px;padding:6px 10px;min-width:0;flex:1;justify-content:center;align-items:center;border-radius:0}
+  .snav-links{flex-direction:row;padding:0;gap:0;justify-content:flex-start;align-items:center;height:100%;flex:1;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .snav-links::-webkit-scrollbar{display:none}
+  .nav-btn{flex-direction:column;gap:3px;padding:6px 8px;min-width:60px;flex:1 0 auto;justify-content:center;align-items:center;border-radius:0}
   .nav-btn span{opacity:1!important;transform:none!important;font-size:8px;letter-spacing:.04em}
   .nav-btn svg{width:20px;height:20px}
   .nav-btn::before{display:none}
@@ -8184,61 +8182,7 @@ import time; time.sleep(60)  # run for 60 seconds</pre></div>
 (function(){
   'use strict';
 
-  /* 1 ── Disable right-click context menu */
-  document.addEventListener('contextmenu', function(e){ e.preventDefault(); return false; });
-
-  /* 2 ── Block DevTools / save / view-source keyboard shortcuts */
-  document.addEventListener('keydown', function(e){
-    const c = e.ctrlKey || e.metaKey;
-    // Ctrl/Cmd + U (view-source), S (save), P (print)
-    if(c && ['u','s','p','U','S','P'].includes(e.key)){ e.preventDefault(); return false; }
-    // Ctrl/Cmd + Shift + I / J / C (DevTools panels)
-    if(c && e.shiftKey && ['i','j','c','I','J','C'].includes(e.key)){ e.preventDefault(); return false; }
-    // F12
-    if(e.key === 'F12'){ e.preventDefault(); return false; }
-  }, true);
-
-  /* 3 ── Disable drag-to-copy on all elements */
-  document.addEventListener('dragstart', function(e){ e.preventDefault(); });
-  document.addEventListener('selectstart', function(e){
-    // Allow selection inside inputs/textareas
-    if(e.target && (e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.isContentEditable)) return;
-    e.preventDefault();
-  });
-
-  /* 4 ── DevTools detection via window dimension delta (desktop only) */
-  var _dtOpen = false;
-  var _dtThreshold = 200;
-  function _detectDT(){
-    // Skip on mobile — browser UI (address bar, status bar) causes false positives
-    if(window.innerWidth <= 900) return;
-    var wDiff = window.outerWidth  - window.innerWidth;
-    var hDiff = window.outerHeight - window.innerHeight;
-    var open  = wDiff > _dtThreshold || hDiff > _dtThreshold;
-    if(open !== _dtOpen){
-      _dtOpen = open;
-      var app  = document.getElementById('app');
-      var warn = document.getElementById('dt-warn');
-      if(app)  app.style.filter  = open ? 'blur(12px) brightness(0.2)' : '';
-      if(warn) warn.style.display = open ? 'flex' : 'none';
-    }
-  }
-  setInterval(_detectDT, 600);
-  _detectDT();
-
-  /* 5 ── Console fingerprint warning */
-  function _consoleWarn(){
-    console.clear();
-    console.log('%c⛔  STOP', 'color:#ff0055;font-size:52px;font-weight:900;font-family:monospace');
-    console.log(
-      '%cThis is a private, proprietary application.\nReverse-engineering, copying, or redistribution is strictly prohibited.\n\n© TradingFlow — All Rights Reserved',
-      'color:#ff6b6b;font-size:13px;line-height:1.8;font-family:monospace'
-    );
-  }
-  _consoleWarn();
-  setInterval(_consoleWarn, 3000);
-
-  /* 6 ── Obfuscated localStorage key names (makes scraping harder) */
+  /* ── Obfuscated localStorage key names ── */
   var _KM = {
     brain:   '\x74\x66\x5f\x62\x72\x61\x69\x6e',       // tf_brain
     td:      '\x74\x64\x41\x70\x69\x4b\x65\x79',        // tdApiKey
