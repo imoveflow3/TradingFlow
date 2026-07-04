@@ -42,7 +42,10 @@
     '.bgfx-vig{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(3,7,18,0.55) 100%)}',
 
     /* reduced motion: freeze */
-    '@media (prefers-reduced-motion:reduce){.bgfx-blob,.bgfx-grid{animation:none!important}}'
+    '@media (prefers-reduced-motion:reduce){.bgfx-blob,.bgfx-grid{animation:none!important}}',
+
+    /* light theme: hide (effects are dark-tuned) */
+    'body.light #bgfx{display:none}'
   ].join('\n');
 
   var style = document.createElement('style');
