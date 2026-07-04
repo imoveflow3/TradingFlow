@@ -31,9 +31,10 @@
     '.bgfx-grid-wrap{position:absolute;left:0;right:0;bottom:0;height:42vh;perspective:420px;perspective-origin:50% 0%;-webkit-mask-image:linear-gradient(to top,rgba(0,0,0,0.9),transparent 90%);mask-image:linear-gradient(to top,rgba(0,0,0,0.9),transparent 90%)}',
     '.bgfx-grid{position:absolute;left:-50%;width:200%;height:300%;top:0;transform:rotateX(62deg);transform-origin:50% 0%;',
     'background-image:linear-gradient(rgba(59,130,246,0.16) 1px,transparent 1px),linear-gradient(90deg,rgba(6,182,212,0.13) 1px,transparent 1px);',
-    'background-size:44px 44px;animation:bgfx-gridmove 3.2s linear infinite}',
+    'background-size:44px 44px;animation:bgfx-gridmove 1.6s linear infinite}',
     '@keyframes bgfx-gridmove{from{background-position:0 0}to{background-position:0 44px}}',
-    '.bgfx-horizon{position:absolute;left:0;right:0;bottom:calc(42vh - 2px);height:2px;background:linear-gradient(90deg,transparent,rgba(59,130,246,0.35) 30%,rgba(6,182,212,0.45) 50%,rgba(59,130,246,0.35) 70%,transparent);filter:blur(1px)}',
+    '.bgfx-horizon{position:absolute;left:0;right:0;bottom:calc(42vh - 2px);height:2px;background:linear-gradient(90deg,transparent,rgba(59,130,246,0.5) 30%,rgba(6,182,212,0.65) 50%,rgba(59,130,246,0.5) 70%,transparent);filter:blur(1px);animation:bgfx-horizonpulse 3s ease-in-out infinite}',
+    '@keyframes bgfx-horizonpulse{0%,100%{opacity:0.55;filter:blur(1px)}50%{opacity:1;filter:blur(2px)}}',
 
     /* particles canvas */
     '#bgfx-canvas{position:absolute;inset:0;width:100%;height:100%}',
@@ -79,6 +80,7 @@
     W = canvas.clientWidth; H = canvas.clientHeight;
     canvas.width = W * DPR; canvas.height = H * DPR;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    if (typeof streams !== 'undefined') streams = [mkStream(0.22), mkStream(0.5), mkStream(0.74)];
   }
   resize();
   window.addEventListener('resize', resize);
@@ -113,10 +115,104 @@
   var visible = true;
   document.addEventListener('visibilitychange', function () { visible = !document.hidden; });
 
+  /* ── LIVE CHART STREAMS ──────────────────────────────── */
+  /* Glowing market lines that scroll across the screen like a live feed. */
+  var STREAM_STEP = 7; // px per point
+  function mkStream(band) {
+    var n = Math.ceil(W / STREAM_STEP) + 4;
+    var pts = [];
+    var y = 0;
+    for (var i = 0; i < n; i++) {
+      y += (Math.random() - 0.5) * 14;
+      y = Math.max(-55, Math.min(55, y));
+      pts.push(y);
+    }
+    return {
+      band: band,          // 0..1 vertical center of the stream
+      pts: pts,
+      speed: 0.6 + Math.random() * 0.7,
+      offset: 0,
+      hue: Math.random() > 0.5 ? [6,182,212] : [59,130,246],
+      alpha: 0.14 + Math.random() * 0.08,
+      amp: 1
+    };
+  }
+  var streams = [mkStream(0.22), mkStream(0.5), mkStream(0.74)];
+
+  function drawStreams() {
+    for (var s = 0; s < streams.length; s++) {
+      var st = streams[s];
+      st.offset += st.speed;
+      while (st.offset >= STREAM_STEP) {
+        st.offset -= STREAM_STEP;
+        var last = st.pts[st.pts.length - 1];
+        var next = last + (Math.random() - 0.5) * 14;
+        next = Math.max(-55, Math.min(55, next));
+        st.pts.push(next);
+        st.pts.shift();
+      }
+      var cy = st.band * H;
+      var rgb = st.hue.join(',');
+
+      /* glow trail */
+      ctx.beginPath();
+      for (var i = 0; i < st.pts.length; i++) {
+        var x = i * STREAM_STEP - st.offset;
+        var y = cy + st.pts[i];
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = 'rgba(' + rgb + ',' + st.alpha + ')';
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = 'rgba(' + rgb + ',0.8)';
+      ctx.shadowBlur = 8;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      /* bright head dot at the leading edge */
+      var hx = (st.pts.length - 1) * STREAM_STEP - st.offset;
+      var hy = cy + st.pts[st.pts.length - 1];
+      var grad = ctx.createRadialGradient(hx, hy, 0, hx, hy, 14);
+      grad.addColorStop(0, 'rgba(' + rgb + ',0.55)');
+      grad.addColorStop(1, 'rgba(' + rgb + ',0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(hx, hy, 14, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  /* ── NEURAL PULSES ───────────────────────────────────── */
+  /* Bright signals that travel along constellation links — AI "thinking". */
+  var pulses = [];
+  function maybeSpawnPulse(a, b) {
+    if (pulses.length < 10 && Math.random() < 0.004) {
+      pulses.push({ a: a, b: b, t: 0, speed: 0.02 + Math.random() * 0.025 });
+    }
+  }
+  function drawPulses() {
+    for (var i = pulses.length - 1; i >= 0; i--) {
+      var p = pulses[i];
+      p.t += p.speed;
+      if (p.t >= 1 || !p.a || !p.b) { pulses.splice(i, 1); continue; }
+      var x = p.a.x + (p.b.x - p.a.x) * p.t;
+      var y = p.a.y + (p.b.y - p.a.y) * p.t;
+      var fade = Math.sin(p.t * Math.PI); // bright mid-travel
+      var g = ctx.createRadialGradient(x, y, 0, x, y, 6);
+      g.addColorStop(0, 'rgba(6,182,212,' + (0.7 * fade).toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(6,182,212,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   function tick() {
     requestAnimationFrame(tick);
     if (!visible) return;
     ctx.clearRect(0, 0, W, H);
+
+    drawStreams();
 
     /* constellation lines */
     ctx.lineWidth = 1;
@@ -126,14 +222,17 @@
         var d2 = dx * dx + dy * dy;
         if (d2 < LINK_DIST * LINK_DIST) {
           var t = 1 - Math.sqrt(d2) / LINK_DIST;
-          ctx.strokeStyle = 'rgba(59,130,246,' + (t * 0.10 * Math.min(parts[a].alpha, parts[b].alpha)).toFixed(3) + ')';
+          ctx.strokeStyle = 'rgba(59,130,246,' + (t * 0.13 * Math.min(parts[a].alpha, parts[b].alpha)).toFixed(3) + ')';
           ctx.beginPath();
           ctx.moveTo(parts[a].x, parts[a].y);
           ctx.lineTo(parts[b].x, parts[b].y);
           ctx.stroke();
+          maybeSpawnPulse(parts[a], parts[b]);
         }
       }
     }
+
+    drawPulses();
 
     /* ticker text */
     for (var j = 0; j < parts.length; j++) {
