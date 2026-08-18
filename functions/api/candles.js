@@ -4,7 +4,10 @@
 const RANGE_FOR = {
   '1m': '2d', '5m': '5d', '15m': '1mo', '60m': '3mo', '1d': '1y', '1wk': '5y',
 };
-const CACHE_TTL = 120;
+// Freshness matched to the timeframe: fast TFs cache briefly, slow TFs longer.
+const TTL_FOR = {
+  '1m': 25, '5m': 45, '15m': 60, '60m': 120, '1d': 300, '1wk': 600,
+};
 
 export async function onRequestGet(context) {
   const url = new URL(context.request.url);
@@ -39,7 +42,7 @@ export async function onRequestGet(context) {
       out.c.push(q.close[i]);
     }
     const resp = json(out);
-    resp.headers.set('Cache-Control', `public, max-age=${CACHE_TTL}`);
+    resp.headers.set('Cache-Control', `public, max-age=${TTL_FOR[interval]}`);
     context.waitUntil(cache.put(cacheKey, resp.clone()));
     return resp;
   } catch (e) {

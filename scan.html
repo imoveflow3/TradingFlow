@@ -192,10 +192,17 @@ body{padding-bottom:40px}
         with ATR-based target and invalidation levels.
       </div>
     </div>
-    <button class="scan-btn" id="scan-btn" onclick="runScan()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      START SCAN
-    </button>
+    <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+      <button class="scan-btn" id="scan-btn" onclick="runScan()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        START SCAN
+      </button>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-family:'Fira Code',monospace;font-size:10.5px;color:var(--muted)">
+        <input type="checkbox" id="auto-update" onchange="toggleAuto()" style="accent-color:var(--neon2);cursor:pointer"/>
+        AUTO-UPDATE (re-scan every 60s)
+      </label>
+      <span id="last-scan" style="font-family:'Fira Code',monospace;font-size:10px;color:var(--muted)"></span>
+    </div>
   </div>
 
   <div id="scan-progress">
@@ -328,15 +335,19 @@ function rateTF(d) {
 }
 
 // ─── DATA FETCH ──────────────────────────────────────────────
+// Client cache with per-timeframe freshness so every re-scan pulls
+// the newest candles the market has printed.
+const CLIENT_TTL = { '1m': 25e3, '5m': 45e3, '15m': 60e3, '60m': 120e3, '1d': 300e3, '1wk': 600e3 };
 const candleCache = {};
 async function getCandles(sym, interval) {
   const key = sym + '|' + interval;
-  if (candleCache[key]) return candleCache[key];
-  const res = await fetch('/api/candles?symbol=' + encodeURIComponent(sym) + '&interval=' + interval);
+  const hit = candleCache[key];
+  if (hit && Date.now() - hit.ts < (CLIENT_TTL[interval] || 60e3)) return hit.data;
+  const res = await fetch('/api/candles?symbol=' + encodeURIComponent(sym) + '&interval=' + interval, { cache: 'no-store' });
   if (!res.ok) throw new Error('candles ' + res.status);
   const d = await res.json();
   if (!d.c || d.c.length < 10) throw new Error('thin data');
-  candleCache[key] = d;
+  candleCache[key] = { data: d, ts: Date.now() };
   return d;
 }
 
@@ -471,7 +482,9 @@ async function runScan() {
     renderResult(result, pair, p);
   }
 
+  const doneAt = new Date();
   document.getElementById('prog-label').textContent = 'Scan complete — ' + total + ' pairs × ' + TFS.length + ' timeframes analyzed';
+  document.getElementById('last-scan').textContent = 'Last scan: ' + doneAt.toLocaleTimeString('en-US', { hour12:false }) + ' (market data as of this moment)';
   btn.disabled = false;
   btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> RE-SCAN';
   scanning = false;
@@ -687,6 +700,17 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 1000);
 initPairSelect();
+
+// ─── AUTO-UPDATE ─────────────────────────────────────────────
+let autoTimer = null;
+function toggleAuto() {
+  const on = document.getElementById('auto-update').checked;
+  if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+  if (on) {
+    if (!scanning) runScan();
+    autoTimer = setInterval(() => { if (!scanning && !document.hidden) runScan(); }, 60000);
+  }
+}
 </script>
 <script src="bg-fx.js"></script>
 </body>
