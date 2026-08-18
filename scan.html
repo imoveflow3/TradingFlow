@@ -353,7 +353,45 @@ function aggregate(d, n) {
   return out;
 }
 
-// rate one timeframe: returns {sig:'bull'|'bear'|'neut', score:-1..1, rsi}
+// ── CHART STRUCTURE READING ──────────────────────────────────
+// Swing pivots (fractal highs/lows): a bar higher/lower than k bars each side.
+function findPivots(h, l, k = 2) {
+  const highs = [], lows = [];
+  for (let i = k; i < h.length - k; i++) {
+    let isH = true, isL = true;
+    for (let j = 1; j <= k; j++) {
+      if (h[i] < h[i-j] || h[i] < h[i+j]) isH = false;
+      if (l[i] > l[i-j] || l[i] > l[i+j]) isL = false;
+    }
+    if (isH) highs.push({ i, p: h[i] });
+    if (isL) lows.push({ i, p: l[i] });
+  }
+  return { highs, lows };
+}
+
+// Classify trend from the last swings: HH+HL = uptrend, LH+LL = downtrend.
+function readStructure(d) {
+  const { highs, lows } = findPivots(d.h, d.l, 2);
+  if (highs.length < 2 || lows.length < 2) return null;
+  const h1 = highs[highs.length-1].p, h2 = highs[highs.length-2].p;
+  const l1 = lows[lows.length-1].p,  l2 = lows[lows.length-2].p;
+  const hh = h1 > h2, hl = l1 > l2, lh = h1 < h2, ll = l1 < l2;
+  let trend, label;
+  if (hh && hl)      { trend = 'up';    label = 'UPTREND (HH + HL)'; }
+  else if (lh && ll) { trend = 'down';  label = 'DOWNTREND (LH + LL)'; }
+  else if (hh && ll) { trend = 'range'; label = 'EXPANDING RANGE'; }
+  else               { trend = 'range'; label = 'RANGE / CONSOLIDATION'; }
+
+  // nearest support (pivot low below price) and resistance (pivot high above)
+  const price = d.c[d.c.length - 1];
+  let sup = null, res = null;
+  for (const x of lows)  if (x.p < price && (sup == null || x.p > sup)) sup = x.p;
+  for (const x of highs) if (x.p > price && (res == null || x.p < res)) res = x.p;
+
+  return { trend, label, sup, res, lastHigh: h1, lastLow: l1 };
+}
+
+// rate one timeframe: indicator votes + chart-structure vote
 function rateTF(d) {
   const c = d.c;
   if (!c || c.length < 40) return null;
@@ -361,14 +399,16 @@ function rateTF(d) {
   const r = rsi(c);
   const e20 = ema(c, 20), e50 = ema(c, 50) ?? ema(c, Math.min(50, c.length - 1));
   const mh = macdHist(c);
+  const st = readStructure(d);
   let votes = 0, total = 0;
   if (r != null)  { total++; if (r > 55) votes++; else if (r < 45) votes--; }
   if (e20 != null){ total++; if (price > e20) votes++; else votes--; }
   if (e20 != null && e50 != null) { total++; if (e20 > e50) votes++; else votes--; }
   if (mh != null) { total++; if (mh > 0) votes++; else votes--; }
+  if (st) { total += 1.5; if (st.trend === 'up') votes += 1.5; else if (st.trend === 'down') votes -= 1.5; }
   if (!total) return null;
   const score = votes / total;
-  return { sig: score > 0.25 ? 'bull' : score < -0.25 ? 'bear' : 'neut', score, rsi: r };
+  return { sig: score > 0.25 ? 'bull' : score < -0.25 ? 'bear' : 'neut', score, rsi: r, structure: st };
 }
 
 // ─── DATA FETCH ──────────────────────────────────────────────
@@ -444,19 +484,33 @@ async function analyzePair(pair, onTf) {
     const e20 = ema(src.c, 20);
     if (a && entry) {
       const long = composite > 0;
-      const tp = long ? entry + 2 * a : entry - 2 * a;
+      const st = readStructure(src);
+      let tp = long ? entry + 2 * a : entry - 2 * a;
       const sl = long ? entry - 1 * a : entry + 1 * a;
+      let tpCapped = false;
+      if (st) {
+        if (long && st.res != null && st.res < tp && st.res > entry) { tp = st.res; tpCapped = true; }
+        if (!long && st.sup != null && st.sup > tp && st.sup < entry) { tp = st.sup; tpCapped = true; }
+      }
 
-      // WHEN TO GET IN: at market if price is near the 1H EMA20;
-      // otherwise wait for a pullback into the EMA20 zone.
+      // WHEN TO GET IN: structure first, then EMA20 position.
       let entryMode, entryZoneLo = null, entryZoneHi = null;
       const dist = e20 != null ? Math.abs(entry - e20) : 0;
-      if (e20 == null || dist <= 0.35 * a) {
+      const nearWall = st && (long
+        ? (st.res != null && st.res - entry < 0.7 * a)
+        : (st.sup != null && entry - st.sup < 0.7 * a));
+      if (st && ((long && st.trend === 'down') || (!long && st.trend === 'up'))) {
+        entryMode = 'structure'; // signal against chart structure — skip
+      } else if (nearWall) {
+        entryMode = 'wall'; // right against S/R — wait for break or pullback
+      } else if (e20 == null || dist <= 0.35 * a) {
         entryMode = 'now';
       } else if (long ? entry > e20 : entry < e20) {
         entryMode = 'pullback';
         entryZoneLo = Math.min(e20, e20 + (long ? 0.25 : -0.25) * a);
         entryZoneHi = Math.max(e20, e20 + (long ? 0.25 : -0.25) * a);
+        if (st && long && st.sup != null && Math.abs(st.sup - e20) < a) entryZoneLo = Math.min(entryZoneLo, st.sup);
+        if (st && !long && st.res != null && Math.abs(st.res - e20) < a) entryZoneHi = Math.max(entryZoneHi, st.res);
       } else {
         entryMode = 'confirm'; // price on wrong side of EMA20 — wait for reclaim
       }
@@ -471,9 +525,11 @@ async function analyzePair(pair, onTf) {
       const hrsHi = Math.max(hrsLo + 2, Math.round(barsToTp * 2));
 
       plan = {
-        entry, tp, sl, atr: a, long, rr: '2.0 : 1',
+        entry, tp, sl, atr: a, long,
+        rr: ((Math.abs(tp - entry)) / (Math.abs(entry - sl) || 1)).toFixed(1) + ' : 1',
         entryMode, entryZoneLo, entryZoneHi, e20,
-        etaLo: hrsLo, etaHi: hrsHi
+        etaLo: hrsLo, etaHi: hrsHi,
+        st, tpCapped
       };
     }
   }
@@ -589,20 +645,44 @@ function showTfPlan(pairDisp, tfIdx, cardId) {
   const entry = cd.c[cd.c.length - 1];
   const a = atr(cd.h, cd.l, cd.c) || 0;
   const e20 = ema(cd.c, 20);
-  const tp = long ? entry + 2 * a : entry - 2 * a;
+  const st = tfr.rating.structure || readStructure(cd);
+  let tp = long ? entry + 2 * a : entry - 2 * a;
   const sl = long ? entry - 1 * a : entry + 1 * a;
 
-  // entry timing vs this TF's EMA20
+  // cap target at chart structure: don't project through S/R
+  let tpNote = '';
+  if (st) {
+    if (long && st.res != null && st.res < tp && st.res > entry) { tp = st.res; tpNote = ' (capped at resistance)'; }
+    if (!long && st.sup != null && st.sup > tp && st.sup < entry) { tp = st.sup; tpNote = ' (capped at support)'; }
+  }
+
+  // entry timing vs this TF's EMA20 + structure
   let inMain, inSub;
   const dist = e20 != null ? Math.abs(entry - e20) : 0;
-  if (e20 == null || dist <= 0.35 * a) {
+  const nearWall = st && (long
+    ? (st.res != null && st.res - entry < 0.7 * a)
+    : (st.sup != null && entry - st.sup < 0.7 * a));
+  const structAgainst = st && ((long && st.trend === 'down') || (!long && st.trend === 'up'));
+
+  if (structAgainst) {
+    inMain = '🚫 SKIP — chart structure is ' + st.label + ', against this signal';
+    inSub = 'The indicators lean ' + (long ? 'long' : 'short') + ' but the swings on this chart still print ' + st.label.toLowerCase() + '. Trading against structure is the #1 way to get stopped out — wait for a ' + (long ? 'higher high' : 'lower low') + ' to confirm the turn.';
+  } else if (nearWall) {
+    inMain = '⚠️ WAIT — price is right ' + (long ? 'under resistance at ' + fmtP(st.res, d) : 'above support at ' + fmtP(st.sup, d));
+    inSub = long
+      ? 'Buying directly into resistance gives the worst entry. Either wait for a ' + tfr.tf + ' close above ' + fmtP(st.res, d) + ' (breakout), or wait for a pullback to ' + (st.sup != null ? 'support at ' + fmtP(st.sup, d) : 'the EMA20') + '.'
+      : 'Selling directly into support gives the worst entry. Either wait for a ' + tfr.tf + ' close below ' + fmtP(st.sup, d) + ' (breakdown), or a bounce back toward ' + (st.res != null ? 'resistance at ' + fmtP(st.res, d) : 'the EMA20') + '.';
+  } else if (e20 == null || dist <= 0.35 * a) {
     inMain = '✅ GET IN NOW — ' + (long ? 'BUY' : 'SELL') + ' at market (' + fmtP(entry, d) + ')';
-    inSub = 'Price is right at the ' + tfr.tf + ' EMA20 with the signal active — this is the entry zone.';
+    inSub = 'Price is at the ' + tfr.tf + ' EMA20' + (st && ((long && st.trend==='up') || (!long && st.trend==='down')) ? ', structure agrees (' + st.label + ')' : '') + ' — this is the entry zone.';
   } else if (long ? entry > e20 : entry < e20) {
-    const zLo = Math.min(e20, e20 + (long ? 0.25 : -0.25) * a);
-    const zHi = Math.max(e20, e20 + (long ? 0.25 : -0.25) * a);
+    let zLo = Math.min(e20, e20 + (long ? 0.25 : -0.25) * a);
+    let zHi = Math.max(e20, e20 + (long ? 0.25 : -0.25) * a);
+    // structure-aware: snap the pullback zone to real support/resistance if it's close to the EMA20
+    if (st && long && st.sup != null && Math.abs(st.sup - e20) < a) { zLo = Math.min(zLo, st.sup); }
+    if (st && !long && st.res != null && Math.abs(st.res - e20) < a) { zHi = Math.max(zHi, st.res); }
     inMain = '⏳ WAIT — ' + (long ? 'BUY' : 'SELL') + ' the pullback into ' + fmtP(zLo, d) + ' – ' + fmtP(zHi, d);
-    inSub = 'Price is extended on the ' + tfr.tf + '. Let it come back to the EMA20 zone; if it runs without you, skip it.';
+    inSub = 'Price is extended on the ' + tfr.tf + '. That zone is the EMA20' + (st && ((long && st.sup != null) || (!long && st.res != null)) ? ' backed by a real swing ' + (long ? 'low' : 'high') : '') + '. If it runs without pulling back, skip it.';
   } else {
     inMain = '🚧 NOT YET — wait for a ' + tfr.tf + ' close ' + (long ? 'above' : 'below') + ' ' + fmtP(e20, d);
     inSub = 'The signal is there but price hasn\'t confirmed on this timeframe yet.';
@@ -617,20 +697,30 @@ function showTfPlan(pairDisp, tfIdx, cardId) {
   const etaLo = fmtDuration(Math.max(1, bars * 0.8) * meta.barMin);
   const etaHi = fmtDuration(Math.max(2, bars * 2) * meta.barMin);
 
+  const rr = ((Math.abs(tp - entry)) / (Math.abs(entry - sl) || 1)).toFixed(1);
+  const structLine = st
+    ? '<div style="font-family:\'Fira Code\',monospace;font-size:10.5px;margin-bottom:6px;color:' + (st.trend === 'up' ? 'var(--green)' : st.trend === 'down' ? 'var(--red)' : 'var(--gold)') + '">📈 CHART STRUCTURE: ' + st.label +
+      '<span style="color:var(--muted)">' +
+      (st.sup != null ? ' · support ' + fmtP(st.sup, d) : '') +
+      (st.res != null ? ' · resistance ' + fmtP(st.res, d) : '') +
+      '</span></div>'
+    : '';
+
   panel.innerHTML =
     '<div class="tfplan-head">' +
       '<span class="tfplan-style">' + meta.style + ' — ' + tfr.tf + ' TIMEFRAME</span>' +
       '<span class="tfplan-dir ' + (long ? 'bull' : 'bear') + '">' + (long ? 'BUY / LONG' : 'SELL / SHORT') + '</span>' +
       '<span style="font-family:\'Fira Code\',monospace;font-size:10px;color:var(--muted)">RSI ' + (tfr.rating.rsi != null ? tfr.rating.rsi.toFixed(1) : '—') + '</span>' +
     '</div>' +
+    structLine +
     '<div class="timing-main" style="font-size:12.5px">' + inMain + '</div>' +
     '<div class="timing-sub" style="margin-bottom:6px">' + inSub + '</div>' +
     '<div class="tfplan-grid">' +
       '<div class="plan-cell"><div class="plan-lbl">ENTRY</div><div class="plan-val entry">' + fmtP(entry, d) + '</div></div>' +
-      '<div class="plan-cell"><div class="plan-lbl">GET OUT — WIN</div><div class="plan-val tp">' + fmtP(tp, d) + '</div></div>' +
+      '<div class="plan-cell"><div class="plan-lbl">GET OUT — WIN</div><div class="plan-val tp">' + fmtP(tp, d) + tpNote + '</div></div>' +
       '<div class="plan-cell"><div class="plan-lbl">GET OUT — WRONG</div><div class="plan-val sl">' + fmtP(sl, d) + '</div></div>' +
     '</div>' +
-    '<div class="tfplan-note">Typical ' + meta.style.toLowerCase() + ' hold: <strong>' + meta.holdHint + '</strong>. At this pair\'s recent ' + tfr.tf + ' pace, target is roughly <strong>' + etaLo + ' – ' + etaHi + '</strong> away. R:R <strong>2:1</strong> · ' + tfr.tf + ' ATR <strong>' + fmtP(a, d) + '</strong>. After +1 ATR profit, move stop to entry.</div>';
+    '<div class="tfplan-note">Typical ' + meta.style.toLowerCase() + ' hold: <strong>' + meta.holdHint + '</strong>. At this pair\'s recent ' + tfr.tf + ' pace, target is roughly <strong>' + etaLo + ' – ' + etaHi + '</strong> away. R:R <strong>' + rr + ':1</strong> · ' + tfr.tf + ' ATR <strong>' + fmtP(a, d) + '</strong>. After +1 ATR profit, move stop to entry.</div>';
   panel.classList.add('open');
 }
 
@@ -672,16 +762,32 @@ function renderResult(r, pair, idx) {
     const dirWord = p.long ? 'rises' : 'falls';
 
     let timingMain, timingSub;
-    if (p.entryMode === 'now') {
+    if (p.entryMode === 'structure') {
+      timingMain = '🚫 SKIP FOR NOW — 1H chart structure is ' + p.st.label + ', against the signal';
+      timingSub = 'Indicators lean ' + (p.long ? 'long' : 'short') + ' but the actual swings still print ' + p.st.label.toLowerCase() + '. Wait for price to print a ' + (p.long ? 'higher high above ' + fmtP(p.st.lastHigh, d) : 'lower low below ' + fmtP(p.st.lastLow, d)) + ' before trusting this signal.';
+    } else if (p.entryMode === 'wall') {
+      timingMain = '⚠️ WAIT — price is right ' + (p.long ? 'under resistance at ' + fmtP(p.st.res, d) : 'above support at ' + fmtP(p.st.sup, d));
+      timingSub = (p.long
+        ? 'Buying into resistance is the worst entry. Wait for a 1H close above ' + fmtP(p.st.res, d) + ' (breakout entry) or a pullback toward ' + (p.st.sup != null ? fmtP(p.st.sup, d) + ' support' : 'the EMA20') + '.'
+        : 'Selling into support is the worst entry. Wait for a 1H close below ' + fmtP(p.st.sup, d) + ' (breakdown entry) or a bounce toward ' + (p.st.res != null ? fmtP(p.st.res, d) + ' resistance' : 'the EMA20') + '.');
+    } else if (p.entryMode === 'now') {
       timingMain = '✅ GET IN NOW — ' + dir + ' at market (' + fmtP(p.entry, d) + ')';
-      timingSub = 'Price is sitting near the 1H EMA20 (' + fmtP(p.e20, d) + ') with timeframes aligned — no better pullback is likely before the move.';
+      timingSub = 'Price is sitting near the 1H EMA20 (' + fmtP(p.e20, d) + ') with timeframes aligned' + (p.st && ((p.long && p.st.trend==='up') || (!p.long && p.st.trend==='down')) ? ' and chart structure agrees (' + p.st.label + ')' : '') + ' — no better pullback is likely before the move.';
     } else if (p.entryMode === 'pullback') {
       timingMain = '⏳ WAIT — ' + dir + ' on pullback into ' + fmtP(p.entryZoneLo, d) + ' – ' + fmtP(p.entryZoneHi, d);
-      timingSub = 'Price is extended ' + (p.long ? 'above' : 'below') + ' the 1H EMA20. Entering on the retest of that zone gives a better price and a tighter stop. If it never pulls back and breaks ' + (p.long ? 'higher' : 'lower') + ', skip the trade — don\'t chase.';
+      timingSub = 'Price is extended ' + (p.long ? 'above' : 'below') + ' the 1H EMA20. That zone is the EMA20' + (p.st && ((p.long && p.st.sup != null) || (!p.long && p.st.res != null)) ? ' backed by a real swing level' : '') + '. If it never pulls back and breaks ' + (p.long ? 'higher' : 'lower') + ', skip the trade — don\'t chase.';
     } else {
       timingMain = '🚧 NOT YET — wait for price to reclaim the 1H EMA20 (' + fmtP(p.e20, d) + ')';
       timingSub = 'The higher timeframes point ' + (p.long ? 'up' : 'down') + ' but the 1H is on the wrong side of its EMA20. Wait for a 1H close ' + (p.long ? 'above' : 'below') + ' it before entering.';
     }
+
+    const structRow = p.st
+      ? '<div style="margin:0 16px 10px;font-family:\'Fira Code\',monospace;font-size:10.5px;color:' + (p.st.trend === 'up' ? 'var(--green)' : p.st.trend === 'down' ? 'var(--red)' : 'var(--gold)') + '">📈 1H STRUCTURE: ' + p.st.label +
+        '<span style="color:var(--muted)">' +
+        (p.st.sup != null ? ' · support ' + fmtP(p.st.sup, d) : '') +
+        (p.st.res != null ? ' · resistance ' + fmtP(p.st.res, d) + (p.tpCapped && p.long ? ' (target capped here)' : '') : '') +
+        '</span></div>'
+      : '';
 
     planHtml =
       '<div class="res-plan">' +
@@ -693,6 +799,7 @@ function renderResult(r, pair, idx) {
         '</div>' +
         '<div class="plan-meta"><span>R:R ' + p.rr + '</span><span>1H ATR ' + fmtP(p.atr, d) + '</span></div>' +
       '</div>' +
+      structRow +
       '<div class="timing-box">' +
         '<div class="timing-title">WHEN TO GET IN</div>' +
         '<div class="timing-main">' + timingMain + '</div>' +
