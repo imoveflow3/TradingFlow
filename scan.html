@@ -45,6 +45,29 @@ body{padding-bottom:40px}
 .scan-btn:disabled{opacity:0.5;cursor:wait;transform:none}
 .scan-btn svg{width:16px;height:16px}
 
+/* PAIR SELECTOR */
+.pair-select{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.pair-chip{font-family:'Fira Code',monospace;font-size:11px;padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all 0.15s}
+.pair-chip:hover{border-color:var(--border2);color:var(--text)}
+.pair-chip.active{background:rgba(59,130,246,0.15);border-color:var(--neon);color:var(--neon);box-shadow:0 0 12px rgba(59,130,246,0.25)}
+
+/* FOCUSED CARD */
+.res-card.focused{grid-column:1/-1}
+.res-card.focused .res-pair{font-size:22px}
+.res-card.focused .verdict-badge{font-size:17px;padding:12px 26px}
+.timing-box{margin:0 16px 12px;background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.25);border-radius:10px;padding:12px 14px}
+.timing-title{font-family:'Orbitron',sans-serif;font-size:9px;color:var(--neon2);letter-spacing:0.1em;margin-bottom:6px}
+.timing-main{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
+.timing-sub{font-size:11px;color:var(--muted);line-height:1.5}
+.exit-rules{margin:0 16px 12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:700px){.exit-rules{grid-template-columns:1fr}}
+.exit-rule{background:rgba(0,0,0,0.25);border:1px solid var(--border);border-radius:8px;padding:9px 12px}
+.exit-rule .er-t{font-family:'Orbitron',sans-serif;font-size:8.5px;letter-spacing:0.08em;margin-bottom:4px}
+.exit-rule.win .er-t{color:var(--green)}
+.exit-rule.lose .er-t{color:var(--red)}
+.exit-rule .er-b{font-size:11px;color:var(--muted);line-height:1.45}
+.exit-rule .er-b strong{color:var(--text);font-family:'Fira Code',monospace}
+
 /* PROGRESS */
 #scan-progress{display:none;margin-bottom:16px;background:var(--glass2);border:1px solid var(--border2);border-radius:12px;padding:16px 20px}
 #scan-progress.active{display:block}
@@ -142,6 +165,8 @@ body{padding-bottom:40px}
 </div>
 
 <div class="content">
+
+  <div class="pair-select" id="pair-select"></div>
 
   <div class="scan-hero">
     <div>
@@ -300,6 +325,20 @@ async function getCandles(sym, interval) {
   return d;
 }
 
+// ─── PAIR SELECTOR ───────────────────────────────────────────
+let selectedPair = 'ALL';
+function initPairSelect() {
+  const el = document.getElementById('pair-select');
+  el.innerHTML = ['ALL', ...PAIRS.map(p => p.disp)].map(d =>
+    '<button class="pair-chip' + (d === selectedPair ? ' active' : '') + '" onclick="pickPair(\'' + d + '\')">' + d + '</button>'
+  ).join('');
+}
+function pickPair(d) {
+  selectedPair = d;
+  document.querySelectorAll('.pair-chip').forEach(c => c.classList.toggle('active', c.textContent === d));
+  if (!scanning) runScan();
+}
+
 // ─── SCAN ENGINE ─────────────────────────────────────────────
 let scanning = false;
 
@@ -338,15 +377,39 @@ async function analyzePair(pair, onTf) {
   if (src && verdict !== 'NEUTRAL') {
     const a = atr(src.h, src.l, src.c);
     const entry = src.c[src.c.length - 1];
+    const e20 = ema(src.c, 20);
     if (a && entry) {
       const long = composite > 0;
+      const tp = long ? entry + 2 * a : entry - 2 * a;
+      const sl = long ? entry - 1 * a : entry + 1 * a;
+
+      // WHEN TO GET IN: at market if price is near the 1H EMA20;
+      // otherwise wait for a pullback into the EMA20 zone.
+      let entryMode, entryZoneLo = null, entryZoneHi = null;
+      const dist = e20 != null ? Math.abs(entry - e20) : 0;
+      if (e20 == null || dist <= 0.35 * a) {
+        entryMode = 'now';
+      } else if (long ? entry > e20 : entry < e20) {
+        entryMode = 'pullback';
+        entryZoneLo = Math.min(e20, e20 + (long ? 0.25 : -0.25) * a);
+        entryZoneHi = Math.max(e20, e20 + (long ? 0.25 : -0.25) * a);
+      } else {
+        entryMode = 'confirm'; // price on wrong side of EMA20 — wait for reclaim
+      }
+
+      // WHEN TO GET OUT (time estimate): TP distance vs average net 1H bar drift.
+      const tail = src.c.slice(-40);
+      let drift = 0;
+      for (let i = 1; i < tail.length; i++) drift += Math.abs(tail[i] - tail[i-1]);
+      drift = drift / (tail.length - 1) || a * 0.5;
+      const barsToTp = (2 * a) / drift;
+      const hrsLo = Math.max(2, Math.round(barsToTp * 0.8));
+      const hrsHi = Math.max(hrsLo + 2, Math.round(barsToTp * 2));
+
       plan = {
-        entry: entry,
-        tp: long ? entry + 2 * a : entry - 2 * a,
-        sl: long ? entry - 1 * a : entry + 1 * a,
-        rr: '2.0 : 1',
-        atr: a,
-        long: long
+        entry, tp, sl, atr: a, long, rr: '2.0 : 1',
+        entryMode, entryZoneLo, entryZoneHi, e20,
+        etaLo: hrsLo, etaHi: hrsHi
       };
     }
   }
@@ -373,9 +436,10 @@ async function runScan() {
   prog.classList.add('active');
   const progTfs = document.getElementById('prog-tfs');
 
-  const total = PAIRS.length;
+  const list = selectedPair === 'ALL' ? PAIRS : PAIRS.filter(x => x.disp === selectedPair);
+  const total = list.length;
   for (let p = 0; p < total; p++) {
-    const pair = PAIRS[p];
+    const pair = list[p];
     document.getElementById('prog-label').textContent = 'Scanning ' + pair.disp + ' — ' + pair.name;
     progTfs.innerHTML = TFS.map(t => '<span class="prog-tf" id="ptf-' + t.disp + '">' + t.disp + '</span>').join('');
 
@@ -403,7 +467,7 @@ function fmtP(v, dec) { return v == null ? '—' : v.toFixed(dec); }
 function renderResult(r, pair, idx) {
   const grid = document.getElementById('results-grid');
   const card = document.createElement('div');
-  card.className = 'res-card';
+  card.className = 'res-card' + (selectedPair !== 'ALL' ? ' focused' : '');
   card.style.animationDelay = (idx % 4) * 0.06 + 's';
 
   if (!r) {
@@ -426,18 +490,43 @@ function renderResult(r, pair, idx) {
   let planHtml = '';
   if (r.plan) {
     const d = pair.dec;
+    const p = r.plan;
+    const dir = p.long ? 'BUY' : 'SELL';
+    const dirWord = p.long ? 'rises' : 'falls';
+
+    let timingMain, timingSub;
+    if (p.entryMode === 'now') {
+      timingMain = '✅ GET IN NOW — ' + dir + ' at market (' + fmtP(p.entry, d) + ')';
+      timingSub = 'Price is sitting near the 1H EMA20 (' + fmtP(p.e20, d) + ') with timeframes aligned — no better pullback is likely before the move.';
+    } else if (p.entryMode === 'pullback') {
+      timingMain = '⏳ WAIT — ' + dir + ' on pullback into ' + fmtP(p.entryZoneLo, d) + ' – ' + fmtP(p.entryZoneHi, d);
+      timingSub = 'Price is extended ' + (p.long ? 'above' : 'below') + ' the 1H EMA20. Entering on the retest of that zone gives a better price and a tighter stop. If it never pulls back and breaks ' + (p.long ? 'higher' : 'lower') + ', skip the trade — don\'t chase.';
+    } else {
+      timingMain = '🚧 NOT YET — wait for price to reclaim the 1H EMA20 (' + fmtP(p.e20, d) + ')';
+      timingSub = 'The higher timeframes point ' + (p.long ? 'up' : 'down') + ' but the 1H is on the wrong side of its EMA20. Wait for a 1H close ' + (p.long ? 'above' : 'below') + ' it before entering.';
+    }
+
     planHtml =
       '<div class="res-plan">' +
-        '<div class="plan-title">' + (r.plan.long ? 'LONG' : 'SHORT') + ' PLAN — ATR-BASED PROJECTION</div>' +
+        '<div class="plan-title">' + (p.long ? 'LONG' : 'SHORT') + ' PLAN — ATR-BASED PROJECTION</div>' +
         '<div class="plan-grid">' +
-          '<div class="plan-cell"><div class="plan-lbl">ENTRY</div><div class="plan-val entry">' + fmtP(r.plan.entry, d) + '</div></div>' +
-          '<div class="plan-cell"><div class="plan-lbl">TARGET (TP)</div><div class="plan-val tp">' + fmtP(r.plan.tp, d) + '</div></div>' +
-          '<div class="plan-cell"><div class="plan-lbl">INVALID (SL)</div><div class="plan-val sl">' + fmtP(r.plan.sl, d) + '</div></div>' +
+          '<div class="plan-cell"><div class="plan-lbl">ENTRY</div><div class="plan-val entry">' + fmtP(p.entry, d) + '</div></div>' +
+          '<div class="plan-cell"><div class="plan-lbl">TARGET (TP)</div><div class="plan-val tp">' + fmtP(p.tp, d) + '</div></div>' +
+          '<div class="plan-cell"><div class="plan-lbl">INVALID (SL)</div><div class="plan-val sl">' + fmtP(p.sl, d) + '</div></div>' +
         '</div>' +
-        '<div class="plan-meta"><span>R:R ' + r.plan.rr + '</span><span>1H ATR ' + fmtP(r.plan.atr, d) + '</span></div>' +
+        '<div class="plan-meta"><span>R:R ' + p.rr + '</span><span>1H ATR ' + fmtP(p.atr, d) + '</span></div>' +
+      '</div>' +
+      '<div class="timing-box">' +
+        '<div class="timing-title">WHEN TO GET IN</div>' +
+        '<div class="timing-main">' + timingMain + '</div>' +
+        '<div class="timing-sub">' + timingSub + '</div>' +
+      '</div>' +
+      '<div class="exit-rules">' +
+        '<div class="exit-rule win"><div class="er-t">WHEN TO GET OUT — WIN</div><div class="er-b">Exit at <strong>' + fmtP(p.tp, d) + '</strong> if price ' + dirWord + ' to target. Estimated <strong>' + p.etaLo + '–' + p.etaHi + ' hours</strong> at recent 1H pace. After +1 ATR in profit, move stop to entry (risk-free).</div></div>' +
+        '<div class="exit-rule lose"><div class="er-t">WHEN TO GET OUT — WRONG</div><div class="er-b">Exit immediately at <strong>' + fmtP(p.sl, d) + '</strong> — no averaging down, no hoping. A 1H close beyond the stop means the setup is invalid.</div></div>' +
       '</div>';
   } else {
-    planHtml = '<div class="res-plan"><div class="plan-title">NO TRADE PLAN — MIXED TIMEFRAMES</div><div style="font-size:11px;color:var(--muted)">Timeframes disagree. The algo does not project a direction until alignment improves.</div></div>';
+    planHtml = '<div class="res-plan"><div class="plan-title">NO TRADE PLAN — MIXED TIMEFRAMES</div><div style="font-size:11px;color:var(--muted)">Timeframes disagree. The algo does not project a direction until alignment improves. Re-scan later or pick another pair.</div></div>';
   }
 
   card.innerHTML =
@@ -468,6 +557,7 @@ function updateClock() {
 }
 updateClock();
 setInterval(updateClock, 1000);
+initPairSelect();
 </script>
 <script src="bg-fx.js"></script>
 </body>
