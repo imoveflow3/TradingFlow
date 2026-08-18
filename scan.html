@@ -181,6 +181,10 @@ body{padding-bottom:40px}
 
 <div class="content">
 
+  <div class="pair-select" style="margin-bottom:8px">
+    <button class="pair-chip active" id="mode-spot" onclick="setMarketMode('spot')" style="font-weight:700">🌐 SPOT FX / CRYPTO</button>
+    <button class="pair-chip" id="mode-fut" onclick="setMarketMode('futures')" style="font-weight:700">📊 FUTURES — TRADOVATE / CME</button>
+  </div>
   <div class="pair-select" id="pair-select"></div>
 
   <div class="scan-hero">
@@ -226,7 +230,7 @@ body{padding-bottom:40px}
 
 <script>
 // ─── UNIVERSE ────────────────────────────────────────────────
-const PAIRS = [
+const SPOT_PAIRS = [
   { sym:'EURUSD=X', disp:'EUR/USD', name:'Euro / US Dollar',            dec:5 },
   { sym:'GBPUSD=X', disp:'GBP/USD', name:'British Pound / US Dollar',   dec:5 },
   { sym:'USDJPY=X', disp:'USD/JPY', name:'US Dollar / Japanese Yen',    dec:3 },
@@ -240,6 +244,39 @@ const PAIRS = [
   { sym:'GC=F',     disp:'XAU/USD', name:'Gold Futures',                dec:2 },
   { sym:'BTC-USD',  disp:'BTC/USD', name:'Bitcoin / US Dollar',         dec:0 },
 ];
+
+// CME futures — the same contracts Tradovate charts, so entries match.
+const FUT_PAIRS = [
+  { sym:'ES=F',  disp:'ES',  name:'E-mini S&P 500 (micro: MES)',      dec:2 },
+  { sym:'NQ=F',  disp:'NQ',  name:'E-mini Nasdaq-100 (micro: MNQ)',   dec:2 },
+  { sym:'YM=F',  disp:'YM',  name:'E-mini Dow (micro: MYM)',          dec:0 },
+  { sym:'RTY=F', disp:'RTY', name:'E-mini Russell 2000 (micro: M2K)', dec:1 },
+  { sym:'CL=F',  disp:'CL',  name:'Crude Oil (micro: MCL)',           dec:2 },
+  { sym:'NG=F',  disp:'NG',  name:'Natural Gas (micro: MNG)',         dec:3 },
+  { sym:'GC=F',  disp:'GC',  name:'Gold (micro: MGC)',                dec:1 },
+  { sym:'SI=F',  disp:'SI',  name:'Silver (micro: SIL)',              dec:3 },
+  { sym:'6E=F',  disp:'6E',  name:'Euro FX Futures (micro: M6E)',     dec:5 },
+  { sym:'6B=F',  disp:'6B',  name:'British Pound Futures (M6B)',      dec:4 },
+  { sym:'6J=F',  disp:'6J',  name:'Japanese Yen Futures',             dec:6 },
+  { sym:'6A=F',  disp:'6A',  name:'Australian Dollar Futures (M6A)',  dec:4 },
+  { sym:'6C=F',  disp:'6C',  name:'Canadian Dollar Futures',          dec:5 },
+  { sym:'BTC=F', disp:'BTC', name:'CME Bitcoin Futures (micro: MBT)', dec:0 },
+];
+
+let PAIRS = SPOT_PAIRS;
+let marketMode = 'spot';
+function setMarketMode(mode) {
+  if (scanning) return;
+  marketMode = mode;
+  PAIRS = mode === 'futures' ? FUT_PAIRS : SPOT_PAIRS;
+  selectedPair = 'ALL';
+  document.getElementById('mode-spot').classList.toggle('active', mode === 'spot');
+  document.getElementById('mode-fut').classList.toggle('active', mode === 'futures');
+  initPairSelect();
+  document.getElementById('results-grid').innerHTML = '';
+  document.getElementById('empty-state').style.display = '';
+  document.getElementById('scan-progress').classList.remove('active');
+}
 
 // timeframe: yahoo interval + weight (higher TF = heavier) + display
 const TFS = [
@@ -361,7 +398,7 @@ function initPairSelect() {
 }
 function pickPair(d) {
   selectedPair = d;
-  document.querySelectorAll('.pair-chip').forEach(c => c.classList.toggle('active', c.textContent === d));
+  document.querySelectorAll('#pair-select .pair-chip').forEach(c => c.classList.toggle('active', c.textContent === d));
   if (!scanning) runScan();
 }
 
