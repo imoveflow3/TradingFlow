@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TradingFlow // Currency Scanner</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;600;700;900&family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060d1c;--bg1:#0a1628;--bg2:#0e1e34;
+  --neon:#3b82f6;--neon2:#06b6d4;
+  --green:#10b981;--green2:#34d399;
+  --red:#ef4444;--red2:#f87171;
+  --gold:#f59e0b;--purple:#818cf8;--magenta:#c084fc;
+  --border:rgba(255,255,255,0.07);--border2:rgba(59,130,246,0.2);
+  --text:#e2ecff;--muted:rgba(140,170,210,0.55);
+  --glass:rgba(6,13,28,0.88);--glass2:rgba(10,22,40,0.72);
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:13px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{padding-bottom:40px}
+
+/* TOPBAR */
+.topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:16px;padding:0 20px;height:54px;background:var(--glass);border-bottom:1px solid var(--border2);backdrop-filter:blur(20px)}
+.topbar-back{display:flex;align-items:center;gap:6px;color:var(--neon);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:600;text-decoration:none;letter-spacing:0.08em;padding:6px 10px;border:1px solid var(--border2);border-radius:6px;transition:all 0.2s;white-space:nowrap}
+.topbar-back:hover{background:rgba(59,130,246,0.1)}
+.topbar-title{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700;background:linear-gradient(90deg,var(--neon),var(--neon2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:0.1em}
+.topbar-spacer{flex:1}
+#live-clock{font-family:'Fira Code',monospace;font-size:12px;color:var(--neon2)}
+
+/* DISCLAIMER */
+.disclaimer{margin:14px 20px 0;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:8px 14px;display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--gold)}
+.disclaimer a{color:var(--gold)}
+
+.content{padding:16px 20px;max-width:1800px}
+
+/* SCAN CONTROL */
+.scan-hero{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;background:var(--glass2);border:1px solid var(--border);border-radius:14px;padding:20px 24px;margin-bottom:16px;position:relative;overflow:hidden}
+.scan-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at top left,rgba(59,130,246,0.07),transparent 60%);pointer-events:none}
+.scan-hero-title{font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;letter-spacing:0.08em;margin-bottom:6px}
+.scan-hero-sub{font-size:12px;color:var(--muted);max-width:560px;line-height:1.5}
+.scan-btn{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--neon),var(--neon2));border:none;border-radius:10px;color:#00101f;font-family:'Orbitron',sans-serif;font-size:12px;font-weight:800;letter-spacing:0.1em;padding:14px 30px;cursor:pointer;transition:all 0.25s;box-shadow:0 0 24px rgba(59,130,246,0.35)}
+.scan-btn:hover{transform:translateY(-1px);box-shadow:0 0 36px rgba(59,130,246,0.55)}
+.scan-btn:disabled{opacity:0.5;cursor:wait;transform:none}
+.scan-btn svg{width:16px;height:16px}
+
+/* PROGRESS */
+#scan-progress{display:none;margin-bottom:16px;background:var(--glass2);border:1px solid var(--border2);border-radius:12px;padding:16px 20px}
+#scan-progress.active{display:block}
+.prog-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.prog-label{font-family:'Fira Code',monospace;font-size:12px;color:var(--neon2);flex:1}
+.prog-pct{font-family:'Fira Code',monospace;font-size:12px;color:var(--text)}
+.prog-track{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;width:0%;border-radius:3px;background:linear-gradient(90deg,var(--neon),var(--neon2));transition:width 0.3s var(--ease);box-shadow:0 0 12px rgba(6,182,212,0.5)}
+.prog-tfs{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.prog-tf{font-family:'Fira Code',monospace;font-size:10px;padding:3px 10px;border-radius:12px;border:1px solid var(--border);color:var(--muted);transition:all 0.2s}
+.prog-tf.scanning{border-color:var(--neon2);color:var(--neon2);box-shadow:0 0 10px rgba(6,182,212,0.3);animation:tf-pulse 0.8s ease-in-out infinite}
+.prog-tf.done-bull{border-color:rgba(16,185,129,0.4);color:var(--green)}
+.prog-tf.done-bear{border-color:rgba(239,68,68,0.4);color:var(--red)}
+.prog-tf.done-neut{border-color:rgba(245,158,11,0.4);color:var(--gold)}
+@keyframes tf-pulse{0%,100%{opacity:1}50%{opacity:0.45}}
+
+/* RESULTS GRID */
+.results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:14px}
+.res-card{background:var(--glass2);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:all 0.3s;opacity:0;transform:translateY(16px);animation:res-in 0.5s var(--ease) forwards}
+@keyframes res-in{to{opacity:1;transform:translateY(0)}}
+.res-card:hover{border-color:var(--border2);box-shadow:0 0 26px rgba(59,130,246,0.12)}
+.res-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)}
+.res-pair{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:900}
+.res-name{font-size:10.5px;color:var(--muted);margin-top:2px}
+.res-price{font-family:'Fira Code',monospace;font-size:14px;font-weight:600;text-align:right}
+.res-chg{font-family:'Fira Code',monospace;font-size:11px;font-weight:600;text-align:right}
+.res-chg.up{color:var(--green)}.res-chg.dn{color:var(--red)}
+
+/* VERDICT */
+.res-verdict{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--border)}
+.verdict-badge{font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.08em;padding:8px 18px;border-radius:10px;white-space:nowrap}
+.v-strongbuy{background:rgba(16,185,129,0.18);color:var(--green2);border:1px solid rgba(16,185,129,0.5);box-shadow:0 0 18px rgba(16,185,129,0.25)}
+.v-buy{background:rgba(16,185,129,0.1);color:var(--green);border:1px solid rgba(16,185,129,0.3)}
+.v-neutral{background:rgba(245,158,11,0.1);color:var(--gold);border:1px solid rgba(245,158,11,0.3)}
+.v-sell{background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.3)}
+.v-strongsell{background:rgba(239,68,68,0.18);color:var(--red2);border:1px solid rgba(239,68,68,0.5);box-shadow:0 0 18px rgba(239,68,68,0.25)}
+.verdict-meter{flex:1}
+.vm-track{height:8px;border-radius:4px;background:linear-gradient(90deg,rgba(239,68,68,0.35),rgba(245,158,11,0.3),rgba(16,185,129,0.35));position:relative}
+.vm-needle{position:absolute;top:-4px;width:3px;height:16px;background:#fff;border-radius:2px;box-shadow:0 0 8px rgba(255,255,255,0.8);transition:left 0.8s var(--ease)}
+.vm-labels{display:flex;justify-content:space-between;font-family:'Fira Code',monospace;font-size:8.5px;color:var(--muted);margin-top:5px}
+.vm-score{font-family:'Fira Code',monospace;font-size:10.5px;color:var(--muted);text-align:center;margin-top:3px}
+
+/* TIMEFRAME ROW */
+.res-tfs{display:flex;gap:5px;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tf-chip{flex:1;min-width:44px;text-align:center;border-radius:8px;padding:6px 2px;border:1px solid var(--border)}
+.tf-chip .tf-name{font-family:'Orbitron',sans-serif;font-size:8.5px;color:var(--muted);letter-spacing:0.05em}
+.tf-chip .tf-sig{font-family:'Fira Code',monospace;font-size:9.5px;font-weight:700;margin-top:3px}
+.tf-chip.bull{background:rgba(16,185,129,0.08);border-color:rgba(16,185,129,0.3)}
+.tf-chip.bull .tf-sig{color:var(--green)}
+.tf-chip.bear{background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.3)}
+.tf-chip.bear .tf-sig{color:var(--red)}
+.tf-chip.neut{background:rgba(245,158,11,0.06);border-color:rgba(245,158,11,0.25)}
+.tf-chip.neut .tf-sig{color:var(--gold)}
+.tf-chip.na .tf-sig{color:var(--muted)}
+
+/* TRADE PLAN */
+.res-plan{padding:12px 16px}
+.plan-title{font-family:'Orbitron',sans-serif;font-size:9px;color:var(--muted);letter-spacing:0.1em;margin-bottom:8px}
+.plan-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.plan-cell{background:rgba(0,0,0,0.25);border:1px solid var(--border);border-radius:8px;padding:8px 10px;text-align:center}
+.plan-lbl{font-size:9px;color:var(--muted);letter-spacing:0.05em;margin-bottom:3px}
+.plan-val{font-family:'Fira Code',monospace;font-size:12.5px;font-weight:600}
+.plan-val.entry{color:var(--neon2)}
+.plan-val.tp{color:var(--green)}
+.plan-val.sl{color:var(--red)}
+.plan-meta{display:flex;justify-content:space-between;margin-top:8px;font-family:'Fira Code',monospace;font-size:10px;color:var(--muted)}
+.res-note{padding:0 16px 12px;font-size:10.5px;color:var(--muted);line-height:1.45}
+
+/* empty state */
+#empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+#empty-state svg{width:44px;height:44px;margin-bottom:14px;opacity:0.4}
+
+.err-chip{font-family:'Fira Code',monospace;font-size:10px;color:var(--red);padding:8px 16px}
+
+@media(max-width:700px){.results-grid{grid-template-columns:1fr}.scan-hero{flex-direction:column;align-items:flex-start}}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="topbar-back" href="index.html">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    DASHBOARD
+  </a>
+  <div class="topbar-title">CURRENCY SCANNER</div>
+  <div class="topbar-spacer"></div>
+  <span id="live-clock"></span>
+</div>
+
+<div class="disclaimer">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+  <span><strong>Algorithmic signals — not financial advice.</strong> Ratings are computed from technical indicators (RSI, MACD, EMA) on real market data. Verify everything with your broker. <a href="disclaimer.html">Full disclaimer</a></span>
+</div>
+
+<div class="content">
+
+  <div class="scan-hero">
+    <div>
+      <div class="scan-hero-title">MULTI-TIMEFRAME CURRENCY SCAN</div>
+      <div class="scan-hero-sub">
+        Analyzes every pair across <strong style="color:var(--neon2)">7 timeframes</strong> — 1W → 1D → 4H → 1H → 15m → 5m → 1m —
+        computing RSI, MACD, and EMA structure on each. Timeframes are weighted (higher = heavier) into one composite rating
+        with ATR-based target and invalidation levels.
+      </div>
+    </div>
+    <button class="scan-btn" id="scan-btn" onclick="runScan()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      START SCAN
+    </button>
+  </div>
+
+  <div id="scan-progress">
+    <div class="prog-row">
+      <span class="prog-label" id="prog-label">Initializing…</span>
+      <span class="prog-pct" id="prog-pct">0%</span>
+    </div>
+    <div class="prog-track"><div class="prog-fill" id="prog-fill"></div></div>
+    <div class="prog-tfs" id="prog-tfs"></div>
+  </div>
+
+  <div id="empty-state">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <div style="font-family:'Orbitron',sans-serif;font-size:12px;letter-spacing:0.08em;margin-bottom:6px">NO SCAN YET</div>
+    <div style="font-size:12px">Hit START SCAN to analyze all currency pairs across every timeframe.</div>
+  </div>
+
+  <div class="results-grid" id="results-grid"></div>
+
+</div>
+
+<script>
+// ─── UNIVERSE ────────────────────────────────────────────────
+const PAIRS = [
+  { sym:'EURUSD=X', disp:'EUR/USD', name:'Euro / US Dollar',            dec:5 },
+  { sym:'GBPUSD=X', disp:'GBP/USD', name:'British Pound / US Dollar',   dec:5 },
+  { sym:'USDJPY=X', disp:'USD/JPY', name:'US Dollar / Japanese Yen',    dec:3 },
+  { sym:'USDCHF=X', disp:'USD/CHF', name:'US Dollar / Swiss Franc',     dec:5 },
+  { sym:'AUDUSD=X', disp:'AUD/USD', name:'Australian Dollar / USD',     dec:5 },
+  { sym:'USDCAD=X', disp:'USD/CAD', name:'US Dollar / Canadian Dollar', dec:5 },
+  { sym:'NZDUSD=X', disp:'NZD/USD', name:'New Zealand Dollar / USD',    dec:5 },
+  { sym:'EURGBP=X', disp:'EUR/GBP', name:'Euro / British Pound',        dec:5 },
+  { sym:'EURJPY=X', disp:'EUR/JPY', name:'Euro / Japanese Yen',         dec:3 },
+  { sym:'GBPJPY=X', disp:'GBP/JPY', name:'British Pound / Yen',         dec:3 },
+  { sym:'GC=F',     disp:'XAU/USD', name:'Gold Futures',                dec:2 },
+  { sym:'BTC-USD',  disp:'BTC/USD', name:'Bitcoin / US Dollar',         dec:0 },
+];
+
+// timeframe: yahoo interval + weight (higher TF = heavier) + display
+const TFS = [
+  { id:'1wk', disp:'1W',  weight:3.0, agg:1 },
+  { id:'1d',  disp:'1D',  weight:2.5, agg:1 },
+  { id:'60m', disp:'4H',  weight:2.0, agg:4 },  // aggregated from 1H
+  { id:'60m', disp:'1H',  weight:1.5, agg:1 },
+  { id:'15m', disp:'15M', weight:1.0, agg:1 },
+  { id:'5m',  disp:'5M',  weight:0.7, agg:1 },
+  { id:'1m',  disp:'1M',  weight:0.4, agg:1 },
+];
+
+// ─── INDICATORS ──────────────────────────────────────────────
+function ema(arr, period) {
+  if (arr.length < period) return null;
+  const k = 2 / (period + 1);
+  let e = arr.slice(0, period).reduce((a,b) => a+b, 0) / period;
+  for (let i = period; i < arr.length; i++) e = arr[i] * k + e * (1 - k);
+  return e;
+}
+function emaSeries(arr, period) {
+  if (arr.length < period) return [];
+  const k = 2 / (period + 1);
+  const out = [];
+  let e = arr.slice(0, period).reduce((a,b) => a+b, 0) / period;
+  out.push(e);
+  for (let i = period; i < arr.length; i++) { e = arr[i] * k + e * (1 - k); out.push(e); }
+  return out;
+}
+function rsi(closes, period = 14) {
+  if (closes.length < period + 1) return null;
+  let gains = 0, losses = 0;
+  for (let i = 1; i <= period; i++) {
+    const d = closes[i] - closes[i-1];
+    if (d > 0) gains += d; else losses -= d;
+  }
+  let ag = gains / period, al = losses / period;
+  for (let i = period + 1; i < closes.length; i++) {
+    const d = closes[i] - closes[i-1];
+    ag = (ag * (period - 1) + Math.max(d, 0)) / period;
+    al = (al * (period - 1) + Math.max(-d, 0)) / period;
+  }
+  if (al === 0) return 100;
+  return 100 - 100 / (1 + ag / al);
+}
+function macdHist(closes) {
+  if (closes.length < 35) return null;
+  const f = emaSeries(closes, 12), s = emaSeries(closes, 26);
+  const align = f.slice(f.length - s.length);
+  const macd = align.map((v, i) => v - s[i]);
+  if (macd.length < 9) return null;
+  const sig = emaSeries(macd, 9);
+  return macd[macd.length-1] - sig[sig.length-1];
+}
+function atr(h, l, c, period = 14) {
+  if (c.length < period + 1) return null;
+  const trs = [];
+  for (let i = 1; i < c.length; i++) {
+    trs.push(Math.max(h[i]-l[i], Math.abs(h[i]-c[i-1]), Math.abs(l[i]-c[i-1])));
+  }
+  return trs.slice(-period).reduce((a,b) => a+b, 0) / period;
+}
+
+// aggregate N candles into 1 (for 4H from 1H)
+function aggregate(d, n) {
+  const out = { t:[], o:[], h:[], l:[], c:[] };
+  for (let i = 0; i + n <= d.c.length; i += n) {
+    out.t.push(d.t[i]);
+    out.o.push(d.o[i]);
+    out.c.push(d.c[i + n - 1]);
+    out.h.push(Math.max(...d.h.slice(i, i + n)));
+    out.l.push(Math.min(...d.l.slice(i, i + n)));
+  }
+  return out;
+}
+
+// rate one timeframe: returns {sig:'bull'|'bear'|'neut', score:-1..1, rsi}
+function rateTF(d) {
+  const c = d.c;
+  if (!c || c.length < 40) return null;
+  const price = c[c.length - 1];
+  const r = rsi(c);
+  const e20 = ema(c, 20), e50 = ema(c, 50) ?? ema(c, Math.min(50, c.length - 1));
+  const mh = macdHist(c);
+  let votes = 0, total = 0;
+  if (r != null)  { total++; if (r > 55) votes++; else if (r < 45) votes--; }
+  if (e20 != null){ total++; if (price > e20) votes++; else votes--; }
+  if (e20 != null && e50 != null) { total++; if (e20 > e50) votes++; else votes--; }
+  if (mh != null) { total++; if (mh > 0) votes++; else votes--; }
+  if (!total) return null;
+  const score = votes / total;
+  return { sig: score > 0.25 ? 'bull' : score < -0.25 ? 'bear' : 'neut', score, rsi: r };
+}
+
+// ─── DATA FETCH ──────────────────────────────────────────────
+const candleCache = {};
+async function getCandles(sym, interval) {
+  const key = sym + '|' + interval;
+  if (candleCache[key]) return candleCache[key];
+  const res = await fetch('/api/candles?symbol=' + encodeURIComponent(sym) + '&interval=' + interval);
+  if (!res.ok) throw new Error('candles ' + res.status);
+  const d = await res.json();
+  if (!d.c || d.c.length < 10) throw new Error('thin data');
+  candleCache[key] = d;
+  return d;
+}
+
+// ─── SCAN ENGINE ─────────────────────────────────────────────
+let scanning = false;
+
+async function analyzePair(pair, onTf) {
+  const tfResults = [];
+  for (let i = 0; i < TFS.length; i++) {
+    const tf = TFS[i];
+    onTf && onTf(i, 'scanning');
+    let rating = null;
+    try {
+      let d = await getCandles(pair.sym, tf.id);
+      if (tf.agg > 1) d = aggregate(d, tf.agg);
+      rating = rateTF(d);
+      if (tf.disp === '1H') pair._h1 = d; // keep for ATR plan
+      if (tf.disp === '1D') pair._d1 = d;
+    } catch (e) { /* leave null */ }
+    tfResults.push({ tf: tf.disp, weight: tf.weight, rating });
+    onTf && onTf(i, rating ? 'done-' + rating.sig : 'done-neut');
+  }
+
+  // composite score: weighted average of tf scores
+  let wsum = 0, sum = 0, used = 0;
+  tfResults.forEach(r => { if (r.rating) { sum += r.rating.score * r.weight; wsum += r.weight; used++; } });
+  if (!used) return null;
+  const composite = sum / wsum; // -1..1
+
+  const verdict =
+    composite >= 0.5  ? 'STRONG BUY'  :
+    composite >= 0.15 ? 'BUY'         :
+    composite <= -0.5 ? 'STRONG SELL' :
+    composite <= -0.15? 'SELL'        : 'NEUTRAL';
+
+  // trade plan from 1H ATR (fallback 1D)
+  const src = pair._h1 || pair._d1;
+  let plan = null;
+  if (src && verdict !== 'NEUTRAL') {
+    const a = atr(src.h, src.l, src.c);
+    const entry = src.c[src.c.length - 1];
+    if (a && entry) {
+      const long = composite > 0;
+      plan = {
+        entry: entry,
+        tp: long ? entry + 2 * a : entry - 2 * a,
+        sl: long ? entry - 1 * a : entry + 1 * a,
+        rr: '2.0 : 1',
+        atr: a,
+        long: long
+      };
+    }
+  }
+
+  // day change from 1D data
+  let chgPct = null;
+  if (pair._d1 && pair._d1.c.length > 1) {
+    const c = pair._d1.c;
+    chgPct = (c[c.length-1] - c[c.length-2]) / c[c.length-2] * 100;
+  }
+
+  return { pair, tfResults, composite, verdict, plan, chgPct, used };
+}
+
+async function runScan() {
+  if (scanning) return;
+  scanning = true;
+  const btn = document.getElementById('scan-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:tf-pulse 1s linear infinite"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> SCANNING…';
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('results-grid').innerHTML = '';
+  const prog = document.getElementById('scan-progress');
+  prog.classList.add('active');
+  const progTfs = document.getElementById('prog-tfs');
+
+  const total = PAIRS.length;
+  for (let p = 0; p < total; p++) {
+    const pair = PAIRS[p];
+    document.getElementById('prog-label').textContent = 'Scanning ' + pair.disp + ' — ' + pair.name;
+    progTfs.innerHTML = TFS.map(t => '<span class="prog-tf" id="ptf-' + t.disp + '">' + t.disp + '</span>').join('');
+
+    const result = await analyzePair(pair, (i, state) => {
+      const el = document.getElementById('ptf-' + TFS[i].disp);
+      if (el) el.className = 'prog-tf ' + state;
+    });
+
+    const pct = Math.round(((p + 1) / total) * 100);
+    document.getElementById('prog-fill').style.width = pct + '%';
+    document.getElementById('prog-pct').textContent = pct + '%';
+
+    renderResult(result, pair, p);
+  }
+
+  document.getElementById('prog-label').textContent = 'Scan complete — ' + total + ' pairs × ' + TFS.length + ' timeframes analyzed';
+  btn.disabled = false;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> RE-SCAN';
+  scanning = false;
+}
+
+// ─── RENDER ──────────────────────────────────────────────────
+function fmtP(v, dec) { return v == null ? '—' : v.toFixed(dec); }
+
+function renderResult(r, pair, idx) {
+  const grid = document.getElementById('results-grid');
+  const card = document.createElement('div');
+  card.className = 'res-card';
+  card.style.animationDelay = (idx % 4) * 0.06 + 's';
+
+  if (!r) {
+    card.innerHTML = '<div class="res-head"><div><div class="res-pair">' + pair.disp + '</div><div class="res-name">' + pair.name + '</div></div></div><div class="err-chip">DATA UNAVAILABLE — try re-scan</div>';
+    grid.appendChild(card);
+    return;
+  }
+
+  const vClass = { 'STRONG BUY':'v-strongbuy', 'BUY':'v-buy', 'NEUTRAL':'v-neutral', 'SELL':'v-sell', 'STRONG SELL':'v-strongsell' }[r.verdict];
+  const needlePos = ((r.composite + 1) / 2 * 100).toFixed(1);
+  const price = r.plan ? r.plan.entry : (pair._d1 ? pair._d1.c[pair._d1.c.length-1] : null);
+  const chgCls = (r.chgPct ?? 0) >= 0 ? 'up' : 'dn';
+
+  const tfChips = r.tfResults.map(t => {
+    if (!t.rating) return '<div class="tf-chip na"><div class="tf-name">' + t.tf + '</div><div class="tf-sig">—</div></div>';
+    const lbl = t.rating.sig === 'bull' ? 'BUY' : t.rating.sig === 'bear' ? 'SELL' : 'NEUT';
+    return '<div class="tf-chip ' + t.rating.sig + '"><div class="tf-name">' + t.tf + '</div><div class="tf-sig">' + lbl + '</div></div>';
+  }).join('');
+
+  let planHtml = '';
+  if (r.plan) {
+    const d = pair.dec;
+    planHtml =
+      '<div class="res-plan">' +
+        '<div class="plan-title">' + (r.plan.long ? 'LONG' : 'SHORT') + ' PLAN — ATR-BASED PROJECTION</div>' +
+        '<div class="plan-grid">' +
+          '<div class="plan-cell"><div class="plan-lbl">ENTRY</div><div class="plan-val entry">' + fmtP(r.plan.entry, d) + '</div></div>' +
+          '<div class="plan-cell"><div class="plan-lbl">TARGET (TP)</div><div class="plan-val tp">' + fmtP(r.plan.tp, d) + '</div></div>' +
+          '<div class="plan-cell"><div class="plan-lbl">INVALID (SL)</div><div class="plan-val sl">' + fmtP(r.plan.sl, d) + '</div></div>' +
+        '</div>' +
+        '<div class="plan-meta"><span>R:R ' + r.plan.rr + '</span><span>1H ATR ' + fmtP(r.plan.atr, d) + '</span></div>' +
+      '</div>';
+  } else {
+    planHtml = '<div class="res-plan"><div class="plan-title">NO TRADE PLAN — MIXED TIMEFRAMES</div><div style="font-size:11px;color:var(--muted)">Timeframes disagree. The algo does not project a direction until alignment improves.</div></div>';
+  }
+
+  card.innerHTML =
+    '<div class="res-head">' +
+      '<div><div class="res-pair">' + pair.disp + '</div><div class="res-name">' + pair.name + '</div></div>' +
+      '<div><div class="res-price">' + (price != null ? fmtP(price, pair.dec) : '—') + '</div>' +
+      (r.chgPct != null ? '<div class="res-chg ' + chgCls + '">' + (r.chgPct >= 0 ? '+' : '') + r.chgPct.toFixed(2) + '% today</div>' : '') + '</div>' +
+    '</div>' +
+    '<div class="res-verdict">' +
+      '<span class="verdict-badge ' + vClass + '">' + r.verdict + '</span>' +
+      '<div class="verdict-meter">' +
+        '<div class="vm-track"><div class="vm-needle" style="left:' + needlePos + '%"></div></div>' +
+        '<div class="vm-labels"><span>STRONG SELL</span><span>NEUTRAL</span><span>STRONG BUY</span></div>' +
+        '<div class="vm-score">composite ' + r.composite.toFixed(2) + ' · ' + r.used + '/7 timeframes</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="res-tfs">' + tfChips + '</div>' +
+    planHtml +
+    '<div class="res-note">Signal = weighted RSI/MACD/EMA votes per timeframe. TP/SL are ATR projections, not guarantees — the market can invalidate any level.</div>';
+
+  grid.appendChild(card);
+}
+
+// ─── CLOCK ───────────────────────────────────────────────────
+function updateClock() {
+  document.getElementById('live-clock').textContent =
+    new Date().toLocaleTimeString('en-US', { hour12:false, timeZone:'America/New_York' }) + ' ET';
+}
+updateClock();
+setInterval(updateClock, 1000);
+</script>
+<script src="bg-fx.js"></script>
+</body>
+</html>
