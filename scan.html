@@ -122,6 +122,21 @@ body{padding-bottom:40px}
 .tf-chip.neut{background:rgba(245,158,11,0.06);border-color:rgba(245,158,11,0.25)}
 .tf-chip.neut .tf-sig{color:var(--gold)}
 .tf-chip.na .tf-sig{color:var(--muted)}
+.tf-chip{cursor:pointer;transition:all 0.15s}
+.tf-chip:hover{transform:translateY(-1px);box-shadow:0 0 10px rgba(59,130,246,0.2)}
+.tf-chip.selected{outline:2px solid var(--neon2);outline-offset:1px}
+
+/* PER-TIMEFRAME PLAN */
+.tfplan{display:none;margin:0 16px 12px;background:rgba(59,130,246,0.05);border:1px solid var(--border2);border-radius:10px;padding:12px 14px}
+.tfplan.open{display:block;animation:res-in 0.3s var(--ease)}
+.tfplan-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.tfplan-style{font-family:'Orbitron',sans-serif;font-size:10px;font-weight:800;letter-spacing:0.08em;padding:4px 10px;border-radius:6px;background:rgba(129,140,248,0.12);color:var(--purple);border:1px solid rgba(129,140,248,0.3)}
+.tfplan-dir{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:800;padding:4px 12px;border-radius:6px}
+.tfplan-dir.bull{background:rgba(16,185,129,0.12);color:var(--green);border:1px solid rgba(16,185,129,0.35)}
+.tfplan-dir.bear{background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.35)}
+.tfplan-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:8px 0}
+.tfplan-note{font-size:11px;color:var(--muted);line-height:1.5}
+.tfplan-note strong{color:var(--text);font-family:'Fira Code',monospace}
 
 /* TRADE PLAN */
 .res-plan{padding:12px 16px}
@@ -347,15 +362,16 @@ async function analyzePair(pair, onTf) {
   for (let i = 0; i < TFS.length; i++) {
     const tf = TFS[i];
     onTf && onTf(i, 'scanning');
-    let rating = null;
+    let rating = null, data = null;
     try {
       let d = await getCandles(pair.sym, tf.id);
       if (tf.agg > 1) d = aggregate(d, tf.agg);
       rating = rateTF(d);
+      data = { t: d.t.slice(-120), o: d.o.slice(-120), h: d.h.slice(-120), l: d.l.slice(-120), c: d.c.slice(-120) };
       if (tf.disp === '1H') pair._h1 = d; // keep for ATR plan
       if (tf.disp === '1D') pair._d1 = d;
     } catch (e) { /* leave null */ }
-    tfResults.push({ tf: tf.disp, weight: tf.weight, rating });
+    tfResults.push({ tf: tf.disp, weight: tf.weight, rating, data });
     onTf && onTf(i, rating ? 'done-' + rating.sig : 'done-neut');
   }
 
@@ -461,8 +477,116 @@ async function runScan() {
   scanning = false;
 }
 
+// ─── PER-TIMEFRAME PLANS ─────────────────────────────────────
+const resultRegistry = {}; // pair.disp -> result
+
+const TF_META = {
+  '1M':  { style:'SCALP',          barMin:1,     holdHint:'minutes' },
+  '5M':  { style:'SCALP',          barMin:5,     holdHint:'minutes to an hour' },
+  '15M': { style:'DAY TRADE',      barMin:15,    holdHint:'a few hours' },
+  '1H':  { style:'DAY TRADE',      barMin:60,    holdHint:'hours to a day' },
+  '4H':  { style:'INTRADAY SWING', barMin:240,   holdHint:'a day or two' },
+  '1D':  { style:'SWING',          barMin:1440,  holdHint:'days to weeks' },
+  '1W':  { style:'POSITION',       barMin:10080, holdHint:'weeks to months' },
+};
+
+function fmtDuration(minutes) {
+  if (minutes < 90) return Math.round(minutes) + ' min';
+  if (minutes < 60 * 36) return (minutes / 60).toFixed(minutes < 600 ? 1 : 0) + ' hours';
+  if (minutes < 1440 * 21) return (minutes / 1440).toFixed(1) + ' days';
+  return (minutes / 10080).toFixed(1) + ' weeks';
+}
+
+function showTfPlan(pairDisp, tfIdx, cardId) {
+  const r = resultRegistry[pairDisp];
+  if (!r) return;
+  const tfr = r.tfResults[tfIdx];
+  const pair = r.pair;
+  const panel = document.getElementById('tfplan-' + cardId);
+  if (!panel) return;
+
+  // toggle chip highlight
+  const card = panel.closest('.res-card');
+  card.querySelectorAll('.tf-chip').forEach((c, i) => c.classList.toggle('selected', i === tfIdx));
+
+  // re-click same tf closes panel
+  if (panel.dataset.tf === String(tfIdx) && panel.classList.contains('open')) {
+    panel.classList.remove('open');
+    panel.dataset.tf = '';
+    card.querySelectorAll('.tf-chip').forEach(c => c.classList.remove('selected'));
+    return;
+  }
+  panel.dataset.tf = String(tfIdx);
+
+  const meta = TF_META[tfr.tf];
+  const d = pair.dec;
+
+  if (!tfr.rating || !tfr.data) {
+    panel.innerHTML = '<div class="tfplan-note">No data for the ' + tfr.tf + ' timeframe right now — re-scan or pick another.</div>';
+    panel.classList.add('open');
+    return;
+  }
+  if (tfr.rating.sig === 'neut') {
+    panel.innerHTML =
+      '<div class="tfplan-head"><span class="tfplan-style">' + meta.style + ' — ' + tfr.tf + '</span></div>' +
+      '<div class="tfplan-note">This timeframe is <strong>NEUTRAL</strong> — RSI, MACD and EMA structure disagree, so there is no edge for a ' + meta.style.toLowerCase() + ' entry right now. Wait for this chip to turn green (BUY) or red (SELL), or trade a timeframe that has a signal.</div>';
+    panel.classList.add('open');
+    return;
+  }
+
+  const cd = tfr.data;
+  const long = tfr.rating.sig === 'bull';
+  const entry = cd.c[cd.c.length - 1];
+  const a = atr(cd.h, cd.l, cd.c) || 0;
+  const e20 = ema(cd.c, 20);
+  const tp = long ? entry + 2 * a : entry - 2 * a;
+  const sl = long ? entry - 1 * a : entry + 1 * a;
+
+  // entry timing vs this TF's EMA20
+  let inMain, inSub;
+  const dist = e20 != null ? Math.abs(entry - e20) : 0;
+  if (e20 == null || dist <= 0.35 * a) {
+    inMain = '✅ GET IN NOW — ' + (long ? 'BUY' : 'SELL') + ' at market (' + fmtP(entry, d) + ')';
+    inSub = 'Price is right at the ' + tfr.tf + ' EMA20 with the signal active — this is the entry zone.';
+  } else if (long ? entry > e20 : entry < e20) {
+    const zLo = Math.min(e20, e20 + (long ? 0.25 : -0.25) * a);
+    const zHi = Math.max(e20, e20 + (long ? 0.25 : -0.25) * a);
+    inMain = '⏳ WAIT — ' + (long ? 'BUY' : 'SELL') + ' the pullback into ' + fmtP(zLo, d) + ' – ' + fmtP(zHi, d);
+    inSub = 'Price is extended on the ' + tfr.tf + '. Let it come back to the EMA20 zone; if it runs without you, skip it.';
+  } else {
+    inMain = '🚧 NOT YET — wait for a ' + tfr.tf + ' close ' + (long ? 'above' : 'below') + ' ' + fmtP(e20, d);
+    inSub = 'The signal is there but price hasn\'t confirmed on this timeframe yet.';
+  }
+
+  // time-to-target in this TF's units
+  const tail = cd.c.slice(-40);
+  let drift = 0;
+  for (let i = 1; i < tail.length; i++) drift += Math.abs(tail[i] - tail[i-1]);
+  drift = drift / (tail.length - 1) || a * 0.5;
+  const bars = (2 * a) / drift;
+  const etaLo = fmtDuration(Math.max(1, bars * 0.8) * meta.barMin);
+  const etaHi = fmtDuration(Math.max(2, bars * 2) * meta.barMin);
+
+  panel.innerHTML =
+    '<div class="tfplan-head">' +
+      '<span class="tfplan-style">' + meta.style + ' — ' + tfr.tf + ' TIMEFRAME</span>' +
+      '<span class="tfplan-dir ' + (long ? 'bull' : 'bear') + '">' + (long ? 'BUY / LONG' : 'SELL / SHORT') + '</span>' +
+      '<span style="font-family:\'Fira Code\',monospace;font-size:10px;color:var(--muted)">RSI ' + (tfr.rating.rsi != null ? tfr.rating.rsi.toFixed(1) : '—') + '</span>' +
+    '</div>' +
+    '<div class="timing-main" style="font-size:12.5px">' + inMain + '</div>' +
+    '<div class="timing-sub" style="margin-bottom:6px">' + inSub + '</div>' +
+    '<div class="tfplan-grid">' +
+      '<div class="plan-cell"><div class="plan-lbl">ENTRY</div><div class="plan-val entry">' + fmtP(entry, d) + '</div></div>' +
+      '<div class="plan-cell"><div class="plan-lbl">GET OUT — WIN</div><div class="plan-val tp">' + fmtP(tp, d) + '</div></div>' +
+      '<div class="plan-cell"><div class="plan-lbl">GET OUT — WRONG</div><div class="plan-val sl">' + fmtP(sl, d) + '</div></div>' +
+    '</div>' +
+    '<div class="tfplan-note">Typical ' + meta.style.toLowerCase() + ' hold: <strong>' + meta.holdHint + '</strong>. At this pair\'s recent ' + tfr.tf + ' pace, target is roughly <strong>' + etaLo + ' – ' + etaHi + '</strong> away. R:R <strong>2:1</strong> · ' + tfr.tf + ' ATR <strong>' + fmtP(a, d) + '</strong>. After +1 ATR profit, move stop to entry.</div>';
+  panel.classList.add('open');
+}
+
 // ─── RENDER ──────────────────────────────────────────────────
 function fmtP(v, dec) { return v == null ? '—' : v.toFixed(dec); }
+let cardSeq = 0;
 
 function renderResult(r, pair, idx) {
   const grid = document.getElementById('results-grid');
@@ -481,10 +605,13 @@ function renderResult(r, pair, idx) {
   const price = r.plan ? r.plan.entry : (pair._d1 ? pair._d1.c[pair._d1.c.length-1] : null);
   const chgCls = (r.chgPct ?? 0) >= 0 ? 'up' : 'dn';
 
-  const tfChips = r.tfResults.map(t => {
-    if (!t.rating) return '<div class="tf-chip na"><div class="tf-name">' + t.tf + '</div><div class="tf-sig">—</div></div>';
+  const cardId = ++cardSeq;
+  resultRegistry[pair.disp] = r;
+  const tfChips = r.tfResults.map((t, i) => {
+    const click = ' onclick="showTfPlan(\'' + pair.disp + '\',' + i + ',' + cardId + ')" title="Click for ' + t.tf + ' trade plan"';
+    if (!t.rating) return '<div class="tf-chip na"' + click + '><div class="tf-name">' + t.tf + '</div><div class="tf-sig">—</div></div>';
     const lbl = t.rating.sig === 'bull' ? 'BUY' : t.rating.sig === 'bear' ? 'SELL' : 'NEUT';
-    return '<div class="tf-chip ' + t.rating.sig + '"><div class="tf-name">' + t.tf + '</div><div class="tf-sig">' + lbl + '</div></div>';
+    return '<div class="tf-chip ' + t.rating.sig + '"' + click + '><div class="tf-name">' + t.tf + '</div><div class="tf-sig">' + lbl + '</div></div>';
   }).join('');
 
   let planHtml = '';
@@ -544,6 +671,8 @@ function renderResult(r, pair, idx) {
       '</div>' +
     '</div>' +
     '<div class="res-tfs">' + tfChips + '</div>' +
+    '<div style="padding:0 16px 8px;font-size:10px;color:var(--muted)">👆 Click any timeframe for a trade plan matched to that style (scalp → position)</div>' +
+    '<div class="tfplan" id="tfplan-' + cardId + '"></div>' +
     planHtml +
     '<div class="res-note">Signal = weighted RSI/MACD/EMA votes per timeframe. TP/SL are ATR projections, not guarantees — the market can invalidate any level.</div>';
 
