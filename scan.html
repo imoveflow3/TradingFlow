@@ -411,6 +411,53 @@ function rateTF(d) {
   return { sig: score > 0.25 ? 'bull' : score < -0.25 ? 'bear' : 'neut', score, rsi: r, structure: st };
 }
 
+// ─── PLATFORM CALIBRATION ────────────────────────────────────
+// Shifts all prices to match the user's charting platform feed
+// (WealthCharts, Tradovate, broker feeds all differ by a few pips/ticks).
+let calOffsets = {};
+try { calOffsets = JSON.parse(localStorage.getItem('tf_cal') || '{}'); } catch(e) {}
+
+function applyOffset(d, off) {
+  if (!off) return d;
+  return {
+    ...d,
+    o: d.o.map(v => v + off), h: d.h.map(v => v + off),
+    l: d.l.map(v => v + off), c: d.c.map(v => v + off),
+    price: d.price != null ? d.price + off : d.price,
+  };
+}
+
+function calibrate(pairDisp) {
+  const pair = PAIRS.find(p => p.disp === pairDisp);
+  if (!pair) return;
+  const r = resultRegistry[pairDisp];
+  const cur = r && r.plan ? r.plan.entry : (pair._d1 ? pair._d1.c[pair._d1.c.length-1] : null);
+  if (cur == null) { alert('Scan ' + pairDisp + ' first, then calibrate.'); return; }
+  const input = prompt(
+    'CALIBRATE ' + pairDisp + ' to your platform\n\n' +
+    'Our feed shows: ' + cur.toFixed(pair.dec) + '\n' +
+    'Enter the CURRENT price your chart (WealthCharts etc.) shows for ' + pairDisp + ':'
+  );
+  if (input == null) return;
+  const theirs = parseFloat(input.replace(/[, ]/g, ''));
+  if (!isFinite(theirs) || theirs <= 0) { alert('Invalid price.'); return; }
+  const existing = calOffsets[pair.sym] || 0;
+  // cur already includes existing offset; new offset replaces it
+  const off = theirs - (cur - existing);
+  if (Math.abs(off) > Math.abs(cur) * 0.1) { alert('That price is >10% away from the market feed — check the number and try again.'); return; }
+  calOffsets[pair.sym] = off;
+  try { localStorage.setItem('tf_cal', JSON.stringify(calOffsets)); } catch(e) {}
+  if (!scanning) runScan();
+}
+
+function clearCalibration(pairDisp) {
+  const pair = PAIRS.find(p => p.disp === pairDisp);
+  if (!pair) return;
+  delete calOffsets[pair.sym];
+  try { localStorage.setItem('tf_cal', JSON.stringify(calOffsets)); } catch(e) {}
+  if (!scanning) runScan();
+}
+
 // ─── DATA FETCH ──────────────────────────────────────────────
 // Client cache with per-timeframe freshness so every re-scan pulls
 // the newest candles the market has printed.
@@ -419,13 +466,13 @@ const candleCache = {};
 async function getCandles(sym, interval) {
   const key = sym + '|' + interval;
   const hit = candleCache[key];
-  if (hit && Date.now() - hit.ts < (CLIENT_TTL[interval] || 60e3)) return hit.data;
+  if (hit && Date.now() - hit.ts < (CLIENT_TTL[interval] || 60e3)) return applyOffset(hit.data, calOffsets[sym]);
   const res = await fetch('/api/candles?symbol=' + encodeURIComponent(sym) + '&interval=' + interval, { cache: 'no-store' });
   if (!res.ok) throw new Error('candles ' + res.status);
   const d = await res.json();
   if (!d.c || d.c.length < 10) throw new Error('thin data');
   candleCache[key] = { data: d, ts: Date.now() };
-  return d;
+  return applyOffset(d, calOffsets[sym]);
 }
 
 // ─── PAIR SELECTOR ───────────────────────────────────────────
@@ -813,9 +860,14 @@ function renderResult(r, pair, idx) {
     planHtml = '<div class="res-plan"><div class="plan-title">NO TRADE PLAN — MIXED TIMEFRAMES</div><div style="font-size:11px;color:var(--muted)">Timeframes disagree. The algo does not project a direction until alignment improves. Re-scan later or pick another pair.</div></div>';
   }
 
+  const calOff = calOffsets[pair.sym];
+  const calBadge = calOff
+    ? '<span style="font-family:\'Fira Code\',monospace;font-size:9px;color:var(--neon2);cursor:pointer" onclick="clearCalibration(\'' + pair.disp + '\')" title="Calibrated to your platform — click to reset">⚙ CAL ' + (calOff > 0 ? '+' : '') + calOff.toFixed(pair.dec) + ' ✕</span>'
+    : '<span style="font-family:\'Fira Code\',monospace;font-size:9px;color:var(--muted);cursor:pointer" onclick="calibrate(\'' + pair.disp + '\')" title="Match prices to your charting platform (WealthCharts, Tradovate...)">⚙ CALIBRATE</span>';
+
   card.innerHTML =
     '<div class="res-head">' +
-      '<div><div class="res-pair">' + pair.disp + '</div><div class="res-name">' + pair.name + '</div></div>' +
+      '<div><div class="res-pair">' + pair.disp + '</div><div class="res-name">' + pair.name + '</div>' + calBadge + '</div>' +
       '<div><div class="res-price">' + (price != null ? fmtP(price, pair.dec) : '—') + '</div>' +
       (r.chgPct != null ? '<div class="res-chg ' + chgCls + '">' + (r.chgPct >= 0 ? '+' : '') + r.chgPct.toFixed(2) + '% today</div>' : '') + '</div>' +
     '</div>' +
