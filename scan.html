@@ -45,6 +45,23 @@ body{padding-bottom:40px}
 .scan-btn:disabled{opacity:0.5;cursor:wait;transform:none}
 .scan-btn svg{width:16px;height:16px}
 
+/* MACRO SNAPSHOT STRIP */
+.macro-strip{display:flex;gap:12px;flex-wrap:wrap;background:var(--glass2);border:1px solid var(--border);border-radius:12px;padding:10px 16px;margin-bottom:14px;align-items:center}
+.macro-strip-title{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:var(--neon2);letter-spacing:0.1em;margin-right:4px}
+.macro-item{display:flex;align-items:baseline;gap:7px;padding:4px 12px;border:1px solid var(--border);border-radius:8px;background:rgba(0,0,0,0.2)}
+.macro-lbl{font-family:'Orbitron',sans-serif;font-size:9px;color:var(--muted);letter-spacing:0.06em}
+.macro-val{font-family:'Fira Code',monospace;font-size:12.5px;font-weight:600;color:var(--text)}
+.macro-chg{font-family:'Fira Code',monospace;font-size:10.5px;font-weight:600}
+.macro-chg.up{color:var(--green)}
+.macro-chg.dn{color:var(--red)}
+.macro-chg.flat{color:var(--muted)}
+
+/* MACRO CONFLUENCE CHIP */
+.macro-chip{font-family:'Fira Code',monospace;font-size:9.5px;padding:4px 10px;border-radius:12px;white-space:nowrap}
+.macro-chip.confirm{background:rgba(16,185,129,0.1);color:var(--green);border:1px solid rgba(16,185,129,0.3)}
+.macro-chip.conflict{background:rgba(245,158,11,0.1);color:var(--gold);border:1px solid rgba(245,158,11,0.3)}
+.macro-chip.none{background:rgba(255,255,255,0.03);color:var(--muted);border:1px solid var(--border)}
+
 /* PAIR SELECTOR */
 .pair-select{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 .pair-chip{font-family:'Fira Code',monospace;font-size:11px;padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all 0.15s}
@@ -180,6 +197,11 @@ body{padding-bottom:40px}
 </div>
 
 <div class="content">
+
+  <div class="macro-strip" id="macro-strip">
+    <span class="macro-strip-title">MACRO SNAPSHOT</span>
+    <span style="font-size:11px;color:var(--muted)">loading…</span>
+  </div>
 
   <div class="pair-select" style="margin-bottom:8px">
     <button class="pair-chip active" id="mode-spot" onclick="setMarketMode('spot')" style="font-weight:700">🌐 SPOT FX / CRYPTO</button>
@@ -411,6 +433,85 @@ function rateTF(d) {
   if (!total) return null;
   const score = votes / total;
   return { sig: score > 0.25 ? 'bull' : score < -0.25 ? 'bear' : 'neut', score, rsi: r, structure: st };
+}
+
+// ─── MACRO SNAPSHOT (DXY / 10Y / VIX) ────────────────────────
+let macroState = null;
+
+async function fetchMacro() {
+  try {
+    const res = await fetch('/api/quotes?symbols=' + encodeURIComponent('DX-Y.NYB,^TNX,^VIX'), { cache: 'no-store' });
+    if (!res.ok) throw new Error('quotes ' + res.status);
+    const { quotes } = await res.json();
+    if (!quotes) throw new Error('empty');
+    macroState = {
+      dxy: quotes['DX-Y.NYB'] || null,
+      tnx: quotes['^TNX'] || null,
+      vix: quotes['^VIX'] || null,
+    };
+    renderMacroStrip();
+  } catch (e) {
+    if (!macroState) {
+      const el = document.getElementById('macro-strip');
+      if (el) el.innerHTML = '<span class="macro-strip-title">MACRO SNAPSHOT</span><span style="font-size:11px;color:var(--muted)">unavailable</span>';
+    }
+  }
+}
+
+function renderMacroStrip() {
+  const el = document.getElementById('macro-strip');
+  if (!el || !macroState) return;
+  const item = (lbl, q, dec) => {
+    if (!q || q.price == null) return '<div class="macro-item"><span class="macro-lbl">' + lbl + '</span><span class="macro-val">—</span></div>';
+    const chg = q.changePct || 0;
+    const cls = Math.abs(chg) < 0.01 ? 'flat' : chg > 0 ? 'up' : 'dn';
+    const arrow = cls === 'flat' ? '·' : chg > 0 ? '▲' : '▼';
+    return '<div class="macro-item"><span class="macro-lbl">' + lbl + '</span>' +
+      '<span class="macro-val">' + q.price.toFixed(dec) + '</span>' +
+      '<span class="macro-chg ' + cls + '">' + arrow + ' ' + (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%</span></div>';
+  };
+  el.innerHTML =
+    '<span class="macro-strip-title">MACRO SNAPSHOT</span>' +
+    item('DXY · US DOLLAR', macroState.dxy, 3) +
+    item('10Y YIELD', macroState.tnx, 3) +
+    item('VIX · FEAR', macroState.vix, 2);
+}
+
+// Directional agreement between a pair's call and the macro backdrop.
+// Additive display only — does not touch rateTF/analyzePair scoring.
+function macroConfluence(pair, composite) {
+  if (!macroState || !composite) return { s: 'none' };
+  const dir = composite > 0 ? 1 : -1;
+  const flat = q => !q || q.changePct == null || Math.abs(q.changePct) < 0.01;
+  const sym = pair.sym, disp = pair.disp;
+
+  if (sym === 'BTC-USD' || sym === 'BTC=F') return { s: 'none' };
+
+  // equity indices vs VIX: falling VIX confirms bullish calls
+  if (['^GSPC', '^NDX', 'ES=F', 'NQ=F'].includes(sym)) {
+    if (flat(macroState.vix)) return { s: 'none' };
+    const vixUp = macroState.vix.changePct > 0;
+    const conf = (dir > 0 && !vixUp) || (dir < 0 && vixUp);
+    return { s: conf ? 'confirm' : 'conflict', why: 'VIX ' + (vixUp ? 'rising' : 'falling') };
+  }
+
+  // metals vs 10Y yield: falling yields confirm bullish gold/silver
+  if (['GC=F', 'SI=F'].includes(sym)) {
+    if (flat(macroState.tnx)) return { s: 'none' };
+    const tnxUp = macroState.tnx.changePct > 0;
+    const conf = (dir > 0 && !tnxUp) || (dir < 0 && tnxUp);
+    return { s: conf ? 'confirm' : 'conflict', why: '10Y ' + (tnxUp ? 'rising' : 'falling') };
+  }
+
+  // USD FX: does the call imply USD strength, and does DXY agree?
+  let usdStrongCall = null;
+  if (/^[A-Z]{3}\/USD$/.test(disp)) usdStrongCall = dir < 0;        // EUR/USD sell = USD strong
+  else if (/^USD\/[A-Z]{3}$/.test(disp)) usdStrongCall = dir > 0;  // USD/JPY buy = USD strong
+  else if (['6E=F', '6B=F', '6J=F', '6A=F', '6C=F', '6S=F', '6N=F'].includes(sym)) usdStrongCall = dir < 0;
+  if (usdStrongCall == null || flat(macroState.dxy)) return { s: 'none' };
+  const dxyUp = macroState.dxy.changePct > 0;
+  const conf = usdStrongCall === dxyUp;
+  return { s: conf ? 'confirm' : 'conflict', why: 'DXY ' + (dxyUp ? 'up' : 'down') };
 }
 
 // ─── PLATFORM CALIBRATION ────────────────────────────────────
@@ -875,6 +976,12 @@ function renderResult(r, pair, idx) {
     '</div>' +
     '<div class="res-verdict">' +
       '<span class="verdict-badge ' + vClass + '">' + r.verdict + '</span>' +
+      (function () {
+        const mc = r.verdict === 'NEUTRAL' ? { s: 'none' } : macroConfluence(pair, r.composite);
+        if (mc.s === 'confirm') return '<span class="macro-chip confirm" title="' + mc.why + '">🔗 Macro Confirms</span>';
+        if (mc.s === 'conflict') return '<span class="macro-chip conflict" title="' + mc.why + '">⚠️ Macro Conflicts</span>';
+        return '<span class="macro-chip none">— No Macro Read</span>';
+      })() +
       '<div class="verdict-meter">' +
         '<div class="vm-track"><div class="vm-needle" style="left:' + needlePos + '%"></div></div>' +
         '<div class="vm-labels"><span>STRONG SELL</span><span>NEUTRAL</span><span>STRONG BUY</span></div>' +
@@ -898,6 +1005,8 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 1000);
 initPairSelect();
+fetchMacro();
+setInterval(fetchMacro, 60000);
 
 // ─── AUTO-UPDATE ─────────────────────────────────────────────
 let autoTimer = null;
