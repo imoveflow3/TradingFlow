@@ -545,7 +545,7 @@ async function fetchNews(sym) {
   if (!q) return null;
   const hit = newsCache[sym];
   if (hit && Date.now() - hit.ts < NEWS_TTL) return hit;
-  const res = await fetch('/api/news?q=' + encodeURIComponent(q));
+  const res = await fetch('/api/news?s=' + encodeURIComponent(sym) + '&q=' + encodeURIComponent(q));
   if (!res.ok) throw new Error('news ' + res.status);
   const items = await res.json();
   if (!Array.isArray(items)) throw new Error('bad payload');
