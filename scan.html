@@ -45,6 +45,21 @@ body{padding-bottom:40px}
 .scan-btn:disabled{opacity:0.5;cursor:wait;transform:none}
 .scan-btn svg{width:16px;height:16px}
 
+/* EVENT BANNER */
+.event-banner{margin:14px 20px 0;border-radius:8px;padding:9px 14px;display:flex;align-items:flex-start;gap:10px;font-size:11.5px;line-height:1.5}
+.event-banner.high{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);color:var(--red)}
+.event-banner.med{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);color:var(--gold)}
+.event-banner strong{font-weight:700}
+.event-banner .eb-list{color:var(--text);font-family:'Fira Code',monospace;font-size:11px;margin-top:4px}
+.event-banner .eb-row{margin-top:2px}
+.event-banner .eb-time{color:var(--muted)}
+.eb-close{background:none;border:none;color:inherit;cursor:pointer;font-size:15px;line-height:1;opacity:0.65;padding:0 2px;margin-left:auto}
+.eb-close:hover{opacity:1}
+
+/* EVENT DAY BADGE */
+.event-chip{font-family:'Fira Code',monospace;font-size:9.5px;padding:4px 10px;border-radius:12px;white-space:nowrap;background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.3)}
+.event-warn{padding:0 16px 12px;font-size:11px;color:var(--gold);line-height:1.45}
+
 /* MACRO SNAPSHOT STRIP */
 .macro-strip{display:flex;gap:12px;flex-wrap:wrap;background:var(--glass2);border:1px solid var(--border);border-radius:12px;padding:10px 16px;margin-bottom:14px;align-items:center}
 .macro-strip-title{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:var(--neon2);letter-spacing:0.1em;margin-right:4px}
@@ -195,6 +210,8 @@ body{padding-bottom:40px}
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
   <span><strong>Algorithmic signals — not financial advice.</strong> Ratings are computed from technical indicators (RSI, MACD, EMA) on real market data. Verify everything with your broker. <a href="disclaimer.html">Full disclaimer</a></span>
 </div>
+
+<div id="event-banner-slot"></div>
 
 <div class="content">
 
@@ -433,6 +450,112 @@ function rateTF(d) {
   if (!total) return null;
   const score = votes / total;
   return { sig: score > 0.25 ? 'bull' : score < -0.25 ? 'bear' : 'neut', score, rsi: r, structure: st };
+}
+
+// ─── ECONOMIC CALENDAR (high-impact event flags) ─────────────
+// Flag/badge layer only — does not alter composite scoring.
+let todaysEvents = [];   // high-impact events scheduled today (ET)
+
+// currency -> instrument symbols affected
+const CUR_MAP = {
+  USD: ['EURUSD=X','GBPUSD=X','USDJPY=X','USDCHF=X','AUDUSD=X','USDCAD=X','NZDUSD=X',
+        'GC=F','SI=F','ES=F','NQ=F','YM=F','RTY=F','^NDX','^GSPC',
+        '6E=F','6B=F','6J=F','6A=F','6C=F'],
+  EUR: ['EURUSD=X','EURGBP=X','EURJPY=X','6E=F'],
+  GBP: ['GBPUSD=X','EURGBP=X','GBPJPY=X','6B=F'],
+  JPY: ['USDJPY=X','EURJPY=X','GBPJPY=X','6J=F'],
+  AUD: ['AUDUSD=X','6A=F'],
+  CAD: ['USDCAD=X','6C=F'],
+  NZD: ['NZDUSD=X'],
+  CHF: ['USDCHF=X','6S=F'],
+};
+
+function etDayKey(dt) {
+  return new Date(dt.toLocaleString('en-US', { timeZone: 'America/New_York' })).toDateString();
+}
+
+async function fetchCalendar() {
+  try {
+    const res = await fetch('/api/calendar');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!Array.isArray(data)) return;
+
+    const todayKey = etDayKey(new Date());
+    todaysEvents = data.filter(e => {
+      if (!e || e.impact !== 'High' || !e.date) return false;
+      const d = new Date(e.date);
+      return !isNaN(d) && etDayKey(d) === todayKey;
+    }).map(e => ({
+      title: e.title,
+      cur: e.country,
+      when: new Date(e.date),
+      time: new Date(e.date).toLocaleTimeString('en-US', { timeZone:'America/New_York', hour:'numeric', minute:'2-digit' }) + ' ET',
+    })).sort((a, b) => a.when - b.when);
+
+    renderEventBanner();
+    // re-tag any cards already on screen
+    if (Object.keys(resultRegistry).length && !scanning) applyEventBadges();
+  } catch (e) { /* silent — calendar is supplementary */ }
+}
+
+function renderEventBanner() {
+  const slot = document.getElementById('event-banner-slot');
+  if (!slot) return;
+  if (!todaysEvents.length || sessionStorage.getItem('tf_eb_dismissed') === '1') { slot.innerHTML = ''; return; }
+  const rows = todaysEvents.map(e =>
+    '<div class="eb-row">' + e.cur + ' — ' + escHtml(e.title) + ' <span class="eb-time">· ' + e.time + '</span></div>'
+  ).join('');
+  slot.innerHTML =
+    '<div class="event-banner high">' +
+      '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>' +
+      '<div><strong>High-impact economic events today (' + todaysEvents.length + ').</strong> Expect volatility around these releases:' +
+      '<div class="eb-list">' + rows + '</div></div>' +
+      '<button class="eb-close" onclick="dismissEventBanner()" title="Dismiss">✕</button>' +
+    '</div>';
+}
+
+function dismissEventBanner() {
+  try { sessionStorage.setItem('tf_eb_dismissed', '1'); } catch (e) {}
+  const slot = document.getElementById('event-banner-slot');
+  if (slot) slot.innerHTML = '';
+}
+
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+// events affecting a given instrument today
+function eventsForPair(pair) {
+  if (!todaysEvents.length) return [];
+  return todaysEvents.filter(e => (CUR_MAP[e.cur] || []).includes(pair.sym));
+}
+
+// re-tag rendered cards after a late calendar fetch
+function applyEventBadges() {
+  document.querySelectorAll('.res-card').forEach(card => {
+    const disp = card.querySelector('.res-pair')?.textContent;
+    const r = resultRegistry[disp];
+    if (!r || card.querySelector('.event-chip')) return;
+    const evs = eventsForPair(r.pair);
+    if (!evs.length) return;
+    const verdictEl = card.querySelector('.res-verdict');
+    if (verdictEl) verdictEl.insertAdjacentHTML('beforeend', eventChipHtml(evs));
+    const note = card.querySelector('.res-note');
+    if (note) note.insertAdjacentHTML('beforebegin', eventWarnHtml(evs));
+  });
+}
+
+function eventChipHtml(evs) {
+  return '<span class="event-chip" title="' + escHtml(evs.map(e => e.cur + ' ' + e.title + ' @ ' + e.time).join(' · ')) + '">⚡ Event Day</span>';
+}
+
+function eventWarnHtml(evs) {
+  const e = evs[0];
+  const extra = evs.length > 1 ? ' +' + (evs.length - 1) + ' more' : '';
+  return '<div class="event-warn">⚡ High-impact ' + e.cur + ' data today (' + escHtml(e.title) + ', ' + e.time + ')' + extra +
+    ' — expect volatility around the release; consider reduced size or a wider stop.</div>';
 }
 
 // ─── MACRO SNAPSHOT (DXY / 10Y / VIX) ────────────────────────
@@ -963,6 +1086,7 @@ function renderResult(r, pair, idx) {
     planHtml = '<div class="res-plan"><div class="plan-title">NO TRADE PLAN — MIXED TIMEFRAMES</div><div style="font-size:11px;color:var(--muted)">Timeframes disagree. The algo does not project a direction until alignment improves. Re-scan later or pick another pair.</div></div>';
   }
 
+  const pairEvents = eventsForPair(pair);
   const calOff = calOffsets[pair.sym];
   const calBadge = calOff
     ? '<span style="font-family:\'Fira Code\',monospace;font-size:9px;color:var(--neon2);cursor:pointer" onclick="clearCalibration(\'' + pair.disp + '\')" title="Calibrated to your platform — click to reset">⚙ CAL ' + (calOff > 0 ? '+' : '') + calOff.toFixed(pair.dec) + ' ✕</span>'
@@ -982,6 +1106,7 @@ function renderResult(r, pair, idx) {
         if (mc.s === 'conflict') return '<span class="macro-chip conflict" title="' + mc.why + '">⚠️ Macro Conflicts</span>';
         return '<span class="macro-chip none">— No Macro Read</span>';
       })() +
+      (pairEvents.length ? eventChipHtml(pairEvents) : '') +
       '<div class="verdict-meter">' +
         '<div class="vm-track"><div class="vm-needle" style="left:' + needlePos + '%"></div></div>' +
         '<div class="vm-labels"><span>STRONG SELL</span><span>NEUTRAL</span><span>STRONG BUY</span></div>' +
@@ -992,6 +1117,7 @@ function renderResult(r, pair, idx) {
     '<div style="padding:0 16px 8px;font-size:10px;color:var(--muted)">👆 Click any timeframe for a trade plan matched to that style (scalp → position)</div>' +
     '<div class="tfplan" id="tfplan-' + cardId + '"></div>' +
     planHtml +
+    (pairEvents.length ? eventWarnHtml(pairEvents) : '') +
     '<div class="res-note">Signal = weighted RSI/MACD/EMA votes per timeframe. TP/SL are ATR projections, not guarantees — the market can invalidate any level.</div>';
 
   grid.appendChild(card);
@@ -1007,6 +1133,7 @@ setInterval(updateClock, 1000);
 initPairSelect();
 fetchMacro();
 setInterval(fetchMacro, 60000);
+fetchCalendar();
 
 // ─── AUTO-UPDATE ─────────────────────────────────────────────
 let autoTimer = null;
