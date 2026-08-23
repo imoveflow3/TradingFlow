@@ -60,6 +60,23 @@ body{padding-bottom:40px}
 .event-chip{font-family:'Fira Code',monospace;font-size:9.5px;padding:4px 10px;border-radius:12px;white-space:nowrap;background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.3)}
 .event-warn{padding:0 16px 12px;font-size:11px;color:var(--gold);line-height:1.45}
 
+/* NEWS SENTIMENT CHIP + PANEL */
+.news-chip{font-family:'Fira Code',monospace;font-size:9.5px;padding:4px 10px;border-radius:12px;white-space:nowrap;cursor:pointer;transition:all 0.15s;border:1px solid var(--border);background:rgba(255,255,255,0.03);color:var(--muted)}
+.news-chip:hover{border-color:var(--border2);color:var(--text)}
+.news-chip.bull{background:rgba(16,185,129,0.1);color:var(--green);border-color:rgba(16,185,129,0.3)}
+.news-chip.bear{background:rgba(239,68,68,0.1);color:var(--red);border-color:rgba(239,68,68,0.3)}
+.news-chip.mixed{background:rgba(245,158,11,0.1);color:var(--gold);border-color:rgba(245,158,11,0.3)}
+.news-panel{display:none;margin:0 16px 12px;background:rgba(0,0,0,0.25);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.news-panel.open{display:block;animation:res-in 0.3s var(--ease)}
+.news-head{font-family:'Orbitron',sans-serif;font-size:9px;color:var(--neon2);letter-spacing:0.1em;margin-bottom:7px}
+.news-item{display:block;font-size:11px;line-height:1.45;color:var(--muted);text-decoration:none;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03)}
+.news-item:last-child{border-bottom:none}
+.news-item:hover{color:var(--text)}
+.news-item .ni-meta{font-family:'Fira Code',monospace;font-size:9.5px;color:var(--muted);opacity:0.7;margin-top:2px}
+.news-item .ni-tone{font-weight:700}
+.news-item .ni-tone.bull{color:var(--green)}
+.news-item .ni-tone.bear{color:var(--red)}
+
 /* MACRO SNAPSHOT STRIP */
 .macro-strip{display:flex;gap:12px;flex-wrap:wrap;background:var(--glass2);border:1px solid var(--border);border-radius:12px;padding:10px 16px;margin-bottom:14px;align-items:center}
 .macro-strip-title{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;color:var(--neon2);letter-spacing:0.1em;margin-right:4px}
@@ -268,6 +285,52 @@ body{padding-bottom:40px}
 </div>
 
 <script>
+// ═══════════════════════════════════════════════════════════
+// NEWS SENTIMENT — TUNABLE CONFIG (edit these freely)
+// ═══════════════════════════════════════════════════════════
+
+// Search terms per instrument. Keep queries tight: broad terms pull noise.
+const NEWS_QUERY = {
+  'EURUSD=X': 'EURUSD OR euro dollar OR ECB',
+  'GBPUSD=X': 'GBPUSD OR pound dollar OR Bank of England',
+  'USDJPY=X': 'USDJPY OR yen dollar OR Bank of Japan',
+  'USDCHF=X': 'USDCHF OR swiss franc OR SNB',
+  'AUDUSD=X': 'AUDUSD OR aussie dollar OR RBA',
+  'USDCAD=X': 'USDCAD OR canadian dollar OR Bank of Canada',
+  'NZDUSD=X': 'NZDUSD OR kiwi dollar OR RBNZ',
+  'EURGBP=X': 'EURGBP OR euro pound OR ECB Bank of England',
+  'EURJPY=X': 'EURJPY OR euro yen',
+  'GBPJPY=X': 'GBPJPY OR pound yen',
+  'GC=F':     'gold price OR XAUUSD OR fed rate',
+  'SI=F':     'silver price OR XAGUSD',
+  'BTC-USD':  'bitcoin price OR crypto market',
+  'BTC=F':    'bitcoin price OR crypto market',
+  '^GSPC':    'S&P 500 OR stock market',
+  '^NDX':     'Nasdaq OR tech stocks',
+  'ES=F':     'S&P 500 futures OR stock market',
+  'NQ=F':     'Nasdaq futures OR tech stocks',
+  'YM=F':     'Dow Jones OR stock market',
+  'RTY=F':    'Russell 2000 OR small caps',
+  'CL=F':     'oil price OR WTI crude OR OPEC',
+  'NG=F':     'natural gas price',
+  '6E=F':     'EURUSD OR euro dollar OR ECB',
+  '6B=F':     'GBPUSD OR pound dollar OR Bank of England',
+  '6J=F':     'USDJPY OR yen OR Bank of Japan',
+  '6A=F':     'AUDUSD OR aussie dollar OR RBA',
+  '6C=F':     'USDCAD OR canadian dollar OR Bank of Canada',
+};
+
+// Headline keyword dictionary. Phrases are matched case-insensitively.
+// Tune by adding/removing entries — scoring is a simple match count.
+const NEWS_BULLISH = [
+  'rate cut', 'dovish', 'safe haven', 'debt', 'stimulus',
+  'weak dollar', 'tariff threat', 'easing', 'record high', 'rally',
+];
+const NEWS_BEARISH = [
+  'rate hike', 'hawkish', 'strong dollar', 'inflation beats', 'risk-on rally',
+  'rate hold hawkish surprise', 'tightening', 'selloff', 'slump', 'plunge',
+];
+
 // ─── UNIVERSE ────────────────────────────────────────────────
 const SPOT_PAIRS = [
   { sym:'EURUSD=X', disp:'EUR/USD', name:'Euro / US Dollar',            dec:5 },
@@ -450,6 +513,92 @@ function rateTF(d) {
   if (!total) return null;
   const score = votes / total;
   return { sig: score > 0.25 ? 'bull' : score < -0.25 ? 'bear' : 'neut', score, rsi: r, structure: st };
+}
+
+// ─── NEWS SENTIMENT (lazy, per-pair) ─────────────────────────
+const newsCache = {};        // sym -> { items, tag, score, ts }
+const NEWS_TTL = 600e3;      // 10 min, matches edge cache
+
+function scoreHeadline(title) {
+  const t = (title || '').toLowerCase();
+  let bull = 0, bear = 0;
+  for (const k of NEWS_BULLISH) if (t.includes(k)) bull++;
+  for (const k of NEWS_BEARISH) if (t.includes(k)) bear++;
+  return bull - bear;
+}
+
+function sentimentTag(items) {
+  const scored = items.map(i => ({ ...i, s: scoreHeadline(i.title) }));
+  const hits = scored.filter(i => i.s !== 0);
+  if (!hits.length) return { tag: 'neutral', label: 'Neutral', avg: 0, scored };
+  const avg = hits.reduce((a, b) => a + b.s, 0) / hits.length;
+  const bulls = hits.filter(i => i.s > 0).length, bears = hits.filter(i => i.s < 0).length;
+  // both directions well represented = genuinely mixed
+  if (bulls && bears && Math.abs(avg) < 0.5) return { tag: 'mixed', label: 'Mixed', avg, scored };
+  if (avg > 0) return { tag: 'bull', label: 'Bullish', avg, scored };
+  if (avg < 0) return { tag: 'bear', label: 'Bearish', avg, scored };
+  return { tag: 'mixed', label: 'Mixed', avg, scored };
+}
+
+async function fetchNews(sym) {
+  const q = NEWS_QUERY[sym];
+  if (!q) return null;
+  const hit = newsCache[sym];
+  if (hit && Date.now() - hit.ts < NEWS_TTL) return hit;
+  const res = await fetch('/api/news?q=' + encodeURIComponent(q));
+  if (!res.ok) throw new Error('news ' + res.status);
+  const items = await res.json();
+  if (!Array.isArray(items)) throw new Error('bad payload');
+  const sent = sentimentTag(items);
+  const entry = { items, ...sent, ts: Date.now() };
+  newsCache[sym] = entry;
+  return entry;
+}
+
+// Lazy: only fires when the user clicks the 📰 chip for that pair.
+async function toggleNews(pairDisp, cardId) {
+  const r = resultRegistry[pairDisp];
+  if (!r) return;
+  const panel = document.getElementById('news-' + cardId);
+  const chip = document.getElementById('newschip-' + cardId);
+  if (!panel) return;
+
+  if (panel.classList.contains('open')) { panel.classList.remove('open'); return; }
+
+  panel.classList.add('open');
+  if (!panel.dataset.loaded) {
+    panel.innerHTML = '<div class="news-head">HEADLINES · LAST 48H</div><div style="font-size:11px;color:var(--muted)">loading…</div>';
+    try {
+      const n = await fetchNews(r.pair.sym);
+      if (!n) { panel.innerHTML = '<div class="news-head">HEADLINES</div><div style="font-size:11px;color:var(--muted)">No news query configured for this instrument.</div>'; return; }
+      renderNewsPanel(panel, n);
+      if (chip) {
+        chip.className = 'news-chip ' + (n.tag === 'neutral' ? '' : n.tag);
+        chip.textContent = '📰 ' + n.label;
+        chip.title = n.items.length + ' headlines · avg score ' + n.avg.toFixed(2);
+      }
+      panel.dataset.loaded = '1';
+    } catch (e) {
+      panel.innerHTML = '<div class="news-head">HEADLINES</div><div style="font-size:11px;color:var(--muted)">News unavailable right now.</div>';
+    }
+  }
+}
+
+function renderNewsPanel(panel, n) {
+  const top = n.scored.slice(0, 3);
+  const rows = top.map(i => {
+    const tone = i.s > 0 ? '<span class="ni-tone bull">▲ bullish</span>'
+               : i.s < 0 ? '<span class="ni-tone bear">▼ bearish</span>'
+               : '<span class="ni-tone">· neutral</span>';
+    const when = i.pubDate ? new Date(i.pubDate).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }) : '';
+    return '<a class="news-item" href="' + escHtml(i.link) + '" target="_blank" rel="noopener noreferrer">' +
+      escHtml(i.title) +
+      '<div class="ni-meta">' + tone + ' · ' + escHtml(i.source || '') + (when ? ' · ' + when : '') + '</div></a>';
+  }).join('');
+  panel.innerHTML =
+    '<div class="news-head">HEADLINES · LAST 48H · ' + n.label.toUpperCase() + '</div>' +
+    (rows || '<div style="font-size:11px;color:var(--muted)">No headlines found.</div>') +
+    '<div style="font-size:9.5px;color:var(--muted);margin-top:7px;opacity:0.75">Keyword sentiment only — headlines are not analyzed for context or sarcasm. Read before acting.</div>';
 }
 
 // ─── ECONOMIC CALENDAR (high-impact event flags) ─────────────
@@ -1107,6 +1256,11 @@ function renderResult(r, pair, idx) {
         return '<span class="macro-chip none">— No Macro Read</span>';
       })() +
       (pairEvents.length ? eventChipHtml(pairEvents) : '') +
+      (NEWS_QUERY[pair.sym]
+        ? '<span class="news-chip' + (newsCache[pair.sym] && newsCache[pair.sym].tag !== 'neutral' ? ' ' + newsCache[pair.sym].tag : '') + '"' +
+          ' id="newschip-' + cardId + '" onclick="toggleNews(\'' + pair.disp + '\',' + cardId + ')"' +
+          ' title="Click to load recent headlines">📰 ' + (newsCache[pair.sym] ? newsCache[pair.sym].label : 'News') + '</span>'
+        : '') +
       '<div class="verdict-meter">' +
         '<div class="vm-track"><div class="vm-needle" style="left:' + needlePos + '%"></div></div>' +
         '<div class="vm-labels"><span>STRONG SELL</span><span>NEUTRAL</span><span>STRONG BUY</span></div>' +
@@ -1115,6 +1269,7 @@ function renderResult(r, pair, idx) {
     '</div>' +
     '<div class="res-tfs">' + tfChips + '</div>' +
     '<div style="padding:0 16px 8px;font-size:10px;color:var(--muted)">👆 Click any timeframe for a trade plan matched to that style (scalp → position)</div>' +
+    '<div class="news-panel" id="news-' + cardId + '"></div>' +
     '<div class="tfplan" id="tfplan-' + cardId + '"></div>' +
     planHtml +
     (pairEvents.length ? eventWarnHtml(pairEvents) : '') +
