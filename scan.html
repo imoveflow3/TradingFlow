@@ -60,6 +60,13 @@ body{padding-bottom:40px}
 .event-chip{font-family:'Fira Code',monospace;font-size:9.5px;padding:4px 10px;border-radius:12px;white-space:nowrap;background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.3)}
 .event-warn{padding:0 16px 12px;font-size:11px;color:var(--gold);line-height:1.45}
 
+/* CONFIDENCE SUFFIX ON VERDICT BADGE */
+.conf-suffix{font-family:'Fira Code',monospace;font-size:9px;font-weight:600;letter-spacing:0.02em;opacity:0.95}
+.conf-suffix.conf-high{color:var(--green2)}
+.conf-suffix.conf-med{color:var(--gold)}
+.conf-suffix.conf-low{color:var(--muted)}
+.conf-note{font-size:8.5px;opacity:0.8;font-weight:400}
+
 /* NEWS SENTIMENT CHIP + PANEL */
 .news-chip{font-family:'Fira Code',monospace;font-size:9.5px;padding:4px 10px;border-radius:12px;white-space:nowrap;cursor:pointer;transition:all 0.15s;border:1px solid var(--border);background:rgba(255,255,255,0.03);color:var(--muted)}
 .news-chip:hover{border-color:var(--border2);color:var(--text)}
@@ -598,6 +605,7 @@ async function toggleNews(pairDisp, cardId) {
         chip.title = n.items.length + ' headlines · avg score ' + n.avg.toFixed(2);
       }
       panel.dataset.loaded = '1';
+      refreshConfidence(pairDisp);   // news may shift the tier
     } catch (e) {
       panel.innerHTML = '<div class="news-head">HEADLINES</div><div style="font-size:11px;color:var(--muted)">News unavailable right now.</div>';
     }
@@ -884,6 +892,61 @@ function pickPair(d) {
   if (!scanning) runScan();
 }
 
+// ─── CONFIDENCE (derived label — does not affect composite/verdict) ──
+const CONF_TIERS = ['LOW', 'MEDIUM', 'HIGH'];
+const stepTier = (t, n) => CONF_TIERS[Math.max(0, Math.min(2, CONF_TIERS.indexOf(t) + n))];
+const capTier = (t, max) => CONF_TIERS.indexOf(t) > CONF_TIERS.indexOf(max) ? max : t;
+
+function computeConfidence(pair, composite, verdict) {
+  if (verdict === 'NEUTRAL') return { tier: 'LOW', reasons: [], note: '' };
+
+  const a = Math.abs(composite);
+  let tier = a >= 0.5 ? 'HIGH' : a >= 0.15 ? 'MEDIUM' : 'LOW';
+  const reasons = [];
+
+  // Phase 1 — macro confluence
+  const mc = macroConfluence(pair, composite);
+  if (mc.s === 'conflict') { tier = stepTier(tier, -1); reasons.push('macro conflict'); }
+  else if (mc.s === 'confirm') reasons.push('macro confirms');
+
+  // Phase 3 — news sentiment, only when already loaded (lazy by design)
+  const news = newsCache[pair.sym];
+  if (news && Date.now() - news.ts < NEWS_TTL) {
+    const dir = composite > 0 ? 1 : -1;
+    const nDir = news.tag === 'bull' ? 1 : news.tag === 'bear' ? -1 : 0;
+    if (nDir !== 0) {
+      if (nDir === dir) { tier = stepTier(tier, 1); reasons.push('news agrees'); }
+      else { tier = stepTier(tier, -1); reasons.push('news conflicts'); }
+    }
+  }
+
+  // Phase 2 — event risk. Applied last as a hard clamp: scheduled volatility
+  // invalidates a clean technical read no matter how strong the other inputs.
+  const evs = eventsForPair(pair);
+  if (evs.length) { tier = capTier(tier, 'MEDIUM'); reasons.push('event risk today'); }
+
+  return { tier, reasons, note: reasons.length ? reasons.join(', ') : '' };
+}
+
+function confidenceHtml(conf) {
+  if (!conf) return '';
+  const cls = conf.tier === 'HIGH' ? 'conf-high' : conf.tier === 'MEDIUM' ? 'conf-med' : 'conf-low';
+  const note = conf.note ? ' <span class="conf-note">(' + escHtml(conf.note) + ')</span>' : '';
+  return '<span class="conf-suffix ' + cls + '"> · ' + conf.tier + ' CONFIDENCE' + note + '</span>';
+}
+
+// Recompute the badge in place after lazily-loaded news arrives.
+function refreshConfidence(pairDisp) {
+  const r = resultRegistry[pairDisp];
+  if (!r) return;
+  r.confidence = computeConfidence(r.pair, r.composite, r.verdict);
+  document.querySelectorAll('.res-card').forEach(card => {
+    if (card.querySelector('.res-pair')?.textContent !== pairDisp) return;
+    const badge = card.querySelector('.verdict-badge');
+    if (badge) badge.innerHTML = r.verdict + confidenceHtml(r.confidence);
+  });
+}
+
 // ─── SCAN ENGINE ─────────────────────────────────────────────
 let scanning = false;
 
@@ -983,7 +1046,9 @@ async function analyzePair(pair, onTf) {
     chgPct = (c[c.length-1] - c[c.length-2]) / c[c.length-2] * 100;
   }
 
-  return { pair, tfResults, composite, verdict, plan, chgPct, used };
+  const confidence = computeConfidence(pair, composite, verdict);
+
+  return { pair, tfResults, composite, verdict, plan, chgPct, used, confidence };
 }
 
 async function runScan() {
@@ -1268,7 +1333,7 @@ function renderResult(r, pair, idx) {
       (r.chgPct != null ? '<div class="res-chg ' + chgCls + '">' + (r.chgPct >= 0 ? '+' : '') + r.chgPct.toFixed(2) + '% today</div>' : '') + '</div>' +
     '</div>' +
     '<div class="res-verdict">' +
-      '<span class="verdict-badge ' + vClass + '">' + r.verdict + '</span>' +
+      '<span class="verdict-badge ' + vClass + '">' + r.verdict + confidenceHtml(r.confidence) + '</span>' +
       (function () {
         const mc = r.verdict === 'NEUTRAL' ? { s: 'none' } : macroConfluence(pair, r.composite);
         if (mc.s === 'confirm') return '<span class="macro-chip confirm" title="' + mc.why + '">🔗 Macro Confirms</span>';
