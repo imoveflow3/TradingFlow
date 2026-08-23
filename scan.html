@@ -320,6 +320,25 @@ const NEWS_QUERY = {
   '6C=F':     'USDCAD OR canadian dollar OR Bank of Canada',
 };
 
+// Yahoo's headline feed is empty or thin for some tickers (USDJPY=X, USDCHF=X
+// and USDCAD=X return zero items). Map those to the short-form ticker, which
+// carries the same market's coverage. Unmapped symbols query themselves.
+const NEWS_SYMBOL = {
+  'USDJPY=X': 'JPY=X',
+  'USDCHF=X': 'CHF=X',
+  'USDCAD=X': 'CAD=X',
+  'NZDUSD=X': 'NZD=X',
+  'EURJPY=X': 'JPY=X',
+  'EURGBP=X': 'GBP=X',
+  '6E=F': 'EUR=X',
+  '6B=F': 'GBP=X',
+  '6J=F': 'JPY=X',
+  '6A=F': 'AUD=X',
+  '6C=F': 'CAD=X',
+  'YM=F': '^DJI',
+  'RTY=F': '^RUT',
+};
+
 // Headline keyword dictionary. Phrases are matched case-insensitively.
 // Tune by adding/removing entries — scoring is a simple match count.
 const NEWS_BULLISH = [
@@ -545,7 +564,8 @@ async function fetchNews(sym) {
   if (!q) return null;
   const hit = newsCache[sym];
   if (hit && Date.now() - hit.ts < NEWS_TTL) return hit;
-  const res = await fetch('/api/news?s=' + encodeURIComponent(sym) + '&q=' + encodeURIComponent(q));
+  const feedSym = NEWS_SYMBOL[sym] || sym;
+  const res = await fetch('/api/news?s=' + encodeURIComponent(feedSym) + '&q=' + encodeURIComponent(q));
   if (!res.ok) throw new Error('news ' + res.status);
   const items = await res.json();
   if (!Array.isArray(items)) throw new Error('bad payload');
